@@ -68,10 +68,10 @@ if __name__ == '__main__':
     parser.add_argument('path', type=str)
 
     args = parser.parse_args()
-    
+
     resample_map = {'lanczos': Image.LANCZOS, 'bilinear': Image.BILINEAR}
     resample = resample_map[args.resample]
-    
+
     sizes = [int(s.strip()) for s in args.size.split(',')]
 
     print(f'Make dataset of image sizes:', ', '.join(str(s) for s in sizes))
