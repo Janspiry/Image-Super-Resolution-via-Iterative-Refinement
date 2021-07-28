@@ -16,9 +16,9 @@ Code will come soon.
 
 #### Conditional generation(super resolution)
 
-- [ ] $16\times16 -> 128\times128$ on FFHQ-CelebaHQ
-- [ ] $64\times64 -> 256\times256$ on FFHQ-CelebaHQ
-- [ ] $64\times64 -> 256\times256$  on ImageNet 
+- [ ] 16×16 -> 128×128 on FFHQ-CelebaHQ
+- [ ] 64×64 -> 256×256 on FFHQ-CelebaHQ
+- [ ] 64×64 -> 256×256 on ImageNet 
 
 #### Unconditional generation
 
