@@ -1,7 +1,6 @@
 ## Image Super-Resolution via Iterative Refinement
 
-[Paper]: https://arxiv.org/pdf/2104.07636.pdf
-[Project]: https://iterative-refinement.github.io/
+[Paper](https://arxiv.org/pdf/2104.07636.pdf ) 	[Project](https://iterative-refinement.github.io/ )
 
 
 
@@ -15,16 +14,15 @@ Code will come soon.
 
 ### Todo
 
-#### Condition generation(super resolution)
+#### Conditional generation(super resolution)
 
-1. ##### FFHQ-CelebaHQ
+- [ ] $16\times16 -> 128\times128$ on FFHQ-CelebaHQ
+- [ ] $64\times64 -> 256\times256$ on FFHQ-CelebaHQ
+- [ ] $64\times64 -> 256\times256$  on ImageNet 
 
-   - [ ] 16->128
-   - [ ] 64->256
+#### Unconditional generation
 
-
-
-#### Uncondition generation
+- [ ] 1024×1024 face generation by a cascade of 3 models
 
 
 
@@ -47,6 +45,9 @@ Code will come soon.
 
 
 ### Reference
+
+1. [Denoising Diffusion Probabilistic Models](https://arxiv.org/pdf/2006.11239.pdf)
+2. [Image Super-Resolution via Iterative Refinement](https://arxiv.org/pdf/2104.07636.pdf)
 
 
 
