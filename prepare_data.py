@@ -2,81 +2,102 @@ import argparse
 from io import BytesIO
 import multiprocessing
 from functools import partial
-
 from PIL import Image
-import lmdb
 from tqdm import tqdm
-from torchvision import datasets
 from torchvision.transforms import functional as trans_fn
+import os
+from pathlib import Path
+import lmdb
 
 
-def resize_and_convert(img, size, resample, quality=100):
-    img = trans_fn.resize(img, size, resample)
-    img = trans_fn.center_crop(img, size)
+def resize_and_convert(img, size, resample):
+    if(img.size[0] != size):
+        img = trans_fn.resize(img, size, resample)
+        img = trans_fn.center_crop(img, size)
+    return img
+
+
+def image_convert_bytes(img):
     buffer = BytesIO()
-    img.save(buffer, format='jpeg', quality=quality)
-    val = buffer.getvalue()
-
-    return val
+    img.save(buffer, format='png')
+    return buffer.getvalue()
 
 
-def resize_multiple(img, sizes=(128, 256, 512, 1024), resample=Image.LANCZOS, quality=100):
-    imgs = []
+def resize_multiple(img, sizes=(16, 128), resample=Image.BICUBIC, lmdb_save=False):
+    mini_img = resize_and_convert(img, sizes[0], resample)
+    hr_img = resize_and_convert(img, sizes[1], resample)
+    lr_img = resize_and_convert(mini_img, sizes[1], resample)
 
-    for size in sizes:
-        imgs.append(resize_and_convert(img, size, resample, quality))
+    if lmdb_save:
+        mini_img = image_convert_bytes(mini_img)
+        hr_img = image_convert_bytes(hr_img)
+        lr_img = image_convert_bytes(lr_img)
 
-    return imgs
+    return [mini_img, hr_img, lr_img]
 
 
-def resize_worker(img_file, sizes, resample):
-    i, file = img_file
-    img = Image.open(file)
+def resize_worker(img_file, sizes, resample, lmdb_save=False):
+    img = Image.open(img_file)
     img = img.convert('RGB')
-    out = resize_multiple(img, sizes=sizes, resample=resample)
+    out = resize_multiple(
+        img, sizes=sizes, resample=resample, lmdb_save=lmdb_save)
 
-    return i, out
+    return img_file.name.split('.')[0], out
 
 
-def prepare(env, dataset, n_worker, sizes=(128, 256, 512, 1024), resample=Image.LANCZOS):
-    resize_fn = partial(resize_worker, sizes=sizes, resample=resample)
+def prepare(img_path, out_path, n_worker, sizes=(16, 128), resample=Image.BICUBIC, lmdb_save=False):
+    resize_fn = partial(resize_worker, sizes=sizes,
+                        resample=resample, lmdb_save=lmdb_save)
 
-    files = sorted(dataset.imgs, key=lambda x: x[0])
-    files = [(i, file) for i, (file, label) in enumerate(files)]
+    files = [p for p in Path(f'{img_path}').glob(f'**/*')]
+
+    if not lmdb_save:
+        os.makedirs(out_path, exist_ok=True)
+        os.makedirs('{}/mini_{}'.format(out_path, sizes[0]), exist_ok=True)
+        os.makedirs('{}/hr_{}'.format(out_path, sizes[1]), exist_ok=True)
+        os.makedirs('{}/lr_{}_{}'.format(out_path, sizes[0], sizes[1]), exist_ok=True)
+    else:
+        env = lmdb.open(out_path, map_size=1024 ** 4, readahead=False)
+
     total = 0
-
     with multiprocessing.Pool(n_worker) as pool:
         for i, imgs in tqdm(pool.imap_unordered(resize_fn, files)):
-            for size, img in zip(sizes, imgs):
-                key = f'{size}-{str(i).zfill(5)}'.encode('utf-8')
-
+            mini_img, hr_img, lr_img = imgs
+            if not lmdb_save:
+                mini_img.save(
+                    '{}/mini_{}/{}.png'.format(out_path, sizes[0], i.zfill(5)))
+                hr_img.save(
+                    '{}/hr_{}/{}.png'.format(out_path, sizes[1], i.zfill(5)))
+                lr_img.save(
+                    '{}/lr_{}_{}/{}.png'.format(out_path, sizes[0], sizes[1], i.zfill(5)))
+            else:
                 with env.begin(write=True) as txn:
-                    txn.put(key, img)
-
+                    txn.put('mini_{}_{}'.format(
+                        sizes[0], i.zfill(5)).encode('utf-8'), mini_img)
+                    txn.put('hr_{}_{}'.format(
+                        sizes[1], i.zfill(5)).encode('utf-8'), hr_img)
+                    txn.put('lr_{}_{}_{}'.format(
+                        sizes[0], sizes[1], i.zfill(5)).encode('utf-8'), lr_img)
             total += 1
-
         with env.begin(write=True) as txn:
             txn.put('length'.encode('utf-8'), str(total).encode('utf-8'))
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--out', type=str)
-    parser.add_argument('--size', type=str, default='128,256,512,1024')
+    parser.add_argument('--path', '-p', type=str, default='dataset/ffhq_128')
+    parser.add_argument('--out', '-o', type=str, default='dataset/ffhq')
+
+    parser.add_argument('--size', type=str, default='16,128')
     parser.add_argument('--n_worker', type=int, default=8)
-    parser.add_argument('--resample', type=str, default='lanczos')
-    parser.add_argument('path', type=str)
+    parser.add_argument('--resample', type=str, default='bicubic')
+    parser.add_argument('--lmdb', '-l', action='store_true')
 
     args = parser.parse_args()
 
-    resample_map = {'lanczos': Image.LANCZOS, 'bilinear': Image.BILINEAR}
+    resample_map = {'bilinear': Image.BILINEAR, 'bicubic': Image.BICUBIC}
     resample = resample_map[args.resample]
-
     sizes = [int(s.strip()) for s in args.size.split(',')]
 
-    print(f'Make dataset of image sizes:', ', '.join(str(s) for s in sizes))
-
-    imgset = datasets.ImageFolder(args.path)
-
-    with lmdb.open(args.out, map_size=1024 ** 4, readahead=False) as env:
-        prepare(env, imgset, args.n_worker, sizes=sizes, resample=resample)
+    prepare(args.path, args.out, args.n_worker,
+            sizes=sizes, resample=resample, lmdb_save=args.lmdb)
