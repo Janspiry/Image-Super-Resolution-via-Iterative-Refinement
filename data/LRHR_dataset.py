@@ -7,13 +7,14 @@ from torchvision import transforms
 
 
 class LRHRDataset(Dataset):
-    def __init__(self, dataroot, l_resolution=16, r_resolution=128, split='train', data_len=-1):
+    def __init__(self, dataroot, l_resolution=16, r_resolution=128, split='train', data_len=-1, need_HR=True):
         self.env = lmdb.open(dataroot, readonly=True, lock=False,
                              readahead=False, meminit=False)
 
         self.l_res = l_resolution
         self.r_res = r_resolution
         self.data_len = data_len
+        self.need_HR = need_HR
         if split == 'train':
             self.transform = transforms.Compose([
                 transforms.RandomHorizontalFlip(),
@@ -38,18 +39,21 @@ class LRHRDataset(Dataset):
         with self.env.begin(write=False) as txn:
             lr_img_bytes = txn.get(
                 'lr_{}_{}_{}'.format(
-                    self.l_res, self.r_res, index.zfill(5)).encode('utf-8')
+                    self.l_res, self.r_res, str(index).zfill(5)).encode('utf-8')
             )
 
-            hr_img_bytes = txn.get(
-                'hr_{}_{}'.format(
-                    self.r_res, index.zfill(5)).encode('utf-8')
-            )
+            if self.need_HR:
+                hr_img_bytes = txn.get(
+                    'hr_{}_{}'.format(
+                        self.r_res, str(index).zfill(5)).encode('utf-8')
+                )
 
         img_LR = Image.open(BytesIO(lr_img_bytes))
-        img_HR = Image.open(BytesIO(hr_img_bytes))
-
         img_LR = self.transform(img_LR)
-        img_HR = self.transform(img_HR)
 
+        if self.need_HR:
+            img_HR = Image.open(BytesIO(hr_img_bytes))
+            img_HR = self.transform(img_HR)
+        else:
+            img_HR = img_LR
         return {'LR': img_LR, 'HR': img_HR, 'Index': index}
