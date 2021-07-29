@@ -1,0 +1,74 @@
+{
+    "name": "basic_sr_ffhq",
+    "phase": "train",
+    "gpu_ids": [
+        0
+    ],
+    "path": {
+        "log": "logs",
+        "tb_logger": "tb_logger",
+        "results": "results",
+        "resume_state": ""
+    },
+    "datasets": {
+        "train": {
+            "name": "FFHQ",
+            "mode": "LRHR",
+            "dataroot": "dataset/ffhq",
+            "l_resolution": 16,
+            "r_resolution": 128,
+            "batch_size": 8,
+            "num_workers": 8,
+            "shuffle": true,
+            "data_len": -1
+        },
+        "val": {
+            "name": "CelebaHQ",
+            "mode": "LRHR",
+            "dataroot": "dataset/celebahq",
+            "l_resolution": 16,
+            "r_resolution": 128,
+            "data_len": 100
+        }
+    },
+    "model": {
+        "unet": {
+            "in_channel": 3,
+            "channel": 128,
+            "channel_multiplier": [
+                1,
+                2,
+                4,
+                8,
+                8
+            ],
+            "n_res_blocks": 3,
+            "dropout": 0.2
+        },
+        "beta_schedule": {
+            "schedule": "linear",
+            "n_timestep": 1000,
+            "linear_start": 1e-4,
+            "linear_end": 2e-2
+        },
+        "diffusion": {
+            "image_size": 128,
+            "channels": 6
+        }
+    },
+    "training": {
+        "n_iter": 1000000,
+        "val_freq": 5e3,
+        "save_checkpoint_freq": 5e3,
+        "print_freq": 200,
+        "optimizer": {
+            "type": "adam",
+            "lr": 1e-4
+        },
+        "scheduler": {
+            "warmup": 2000,
+            "update_ema_every": 10,
+            "ema_decay": 0.995
+        }
+    }
+}
