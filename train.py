@@ -1,11 +1,11 @@
-from model import diffusion
+
 import torch
 from torch import optim
-import data
-import model
+import data as Data
+import model as Model
 import argparse
 import logging
-import logger
+import logger as Logger
 import metrics
 from tensorboardX import SummaryWriter
 import copy
@@ -24,40 +24,44 @@ if __name__ == "__main__":
     parser.add_argument('-c', '--config', type=str, default='config/basic_sr.json',
                         help='JSON file for configuration')
     parser.add_argument('-p', '--phase', type=str, choices=['train', 'val'],
-                        help='Run either training or generation')
-    parser.add_argument('-gpu', '--gpu_ids', type=str, default='0')
+                        help='Run either training or generation', default='train')
+    parser.add_argument('-gpu', '--gpu_ids', type=str, default=None)
+
     # parse configs
-    opt = logger.parse(parser.parse_args().opt, is_train=True)
+    args = parser.parse_args()
+    opt = Logger.parse(args)
     # Convert to NoneDict, which return None for missing key.
-    opt = logger.dict_to_nonedict(opt)
+    opt = Logger.dict_to_nonedict(opt)
 
     # logging
     torch.backends.cudnn.enabled = True
     torch.backends.cudnn.benchmark = True
 
-    logger.setup_logger(None, opt['path']['log'],
+    Logger.setup_logger(None, opt['path']['log'],
                         'train', level=logging.INFO, screen=True)
-    logger.setup_logger('val', opt['path']['log'], 'val', level=logging.INFO)
+    Logger.setup_logger('val', opt['path']['log'], 'val', level=logging.INFO)
     logger = logging.getLogger('base')
-    logger.info(logger.dict2str(opt))
+    logger.info(Logger.dict2str(opt))
     tb_logger = SummaryWriter(log_dir=opt['path']['tb_logger'])
 
     # dataset
     for phase, dataset_opt in opt['datasets'].items():
-        if phase == 'train':
-            train_set = data.create_dataset(dataset_opt)
-            train_loader = data.create_dataloader(train_set, dataset_opt)
+        if phase == 'train' and args.phase != 'val':
+            train_set = Data.create_dataset(dataset_opt, phase)
+            train_loader = Data.create_dataloader(
+                train_set, dataset_opt, phase)
         elif phase == 'val':
-            val_set = data.create_dataset(dataset_opt)
-            val_loader = data.create_dataloader(val_set, dataset_opt)
+            val_set = Data.create_dataset(dataset_opt, phase)
+            val_loader = Data.create_dataloader(
+                val_set, dataset_opt, phase)
     logger.info('Initial Dataset Finished')
 
     # model
-    diffusion = model.create_model(opt['model'])
+    diffusion = Model.create_model(opt['model'])
     ema = copy.deepcopy(diffusion)
     if opt['training']["optimizer"]["type"] == 'adam':
-        opt = optim.Adam(diffusion.parameters(),
-                         lr=opt['training']["optimizer"]["lr"])
+        optimizer = optim.Adam(diffusion.parameters(),
+                               lr=opt['training']["optimizer"]["lr"])
 
     logger.info('Initial Model Finished')
 
@@ -67,23 +71,29 @@ if __name__ == "__main__":
     n_iter = opt['training']["scheduler"]
     step_start_ema = opt['training']["scheduler"]['step_start_ema'],
     update_ema_every = opt['training']["scheduler"]['update_ema_every'],
-    ema_decay = opt['training']["scheduler"]['ema_decay'],
+    ema_decay = opt['training']["scheduler"]['ema_decay']
+
+    diffusion = diffusion.cuda()
+    ema = ema.cuda()
+
     while True:
         for _, train_data in enumerate(train_loader):
+            train_data = train_data.cuda()
+
             current_step += 1
             if current_step > n_iter:
                 break
 
             # training
-            opt.zero_grad()
+            optimizer.zero_grad()
 
             loss = diffusion(train_data)
             loss.backward()
-            opt.step()
+            optimizer.step()
 
             if current_step % update_ema_every == 0:
                 accumulate(
-                    ema, model.module, 0 if current_step < step_start_ema else ema_decay
+                    ema, diffusion.module, 0 if current_step < step_start_ema else ema_decay
                 )
             # log
             if current_step % opt['train']['print_freq'] == 0:

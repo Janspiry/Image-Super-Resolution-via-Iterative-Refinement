@@ -15,10 +15,13 @@ def mkdirs(paths):
 
 
 def get_timestamp():
-    return datetime.now().strftime('%y%m%d-%H%M%S')
+    return datetime.now().strftime('%y%m%d_%H%M%S')
 
 
-def parse(opt_path):
+def parse(args):
+    phase = args.phase
+    opt_path = args.config
+    gpu_ids = args.gpu_ids
     # remove comments starting with '//'
     json_str = ''
     with open(opt_path, 'r') as f:
@@ -27,6 +30,7 @@ def parse(opt_path):
             json_str += line
     opt = json.loads(json_str, object_pairs_hook=OrderedDict)
 
+    # set log directory
     experiments_root = os.path.join(
         'experiments', '{}_{}'.format(opt['name'], get_timestamp()))
     opt['path']['experiments_root'] = experiments_root
@@ -40,11 +44,19 @@ def parse(opt_path):
     mkdirs((path for key, path in opt['path'].items(
     ) if 'pretrain_model' not in key and 'resume' not in key))
 
+    # change dataset length limit
+    opt['datasets'][phase]['data_len'] = -1
+
     # export CUDA_VISIBLE_DEVICES
+    if gpu_ids is not None:
+        opt['gpu_ids'] = gpu_ids
     gpu_list = ','.join(str(x) for x in opt['gpu_ids'])
     os.environ['CUDA_VISIBLE_DEVICES'] = gpu_list
     print('export CUDA_VISIBLE_DEVICES=' + gpu_list)
-
+    if len(gpu_list) > 0:
+        opt['distributed'] = True
+    else:
+        opt['distributed'] = False
     return opt
 
 

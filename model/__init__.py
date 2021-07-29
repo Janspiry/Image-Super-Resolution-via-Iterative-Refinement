@@ -1,5 +1,5 @@
-from diffusion import GaussianDiffusion, make_beta_schedule
-from unet import UNet
+from .diffusion import GaussianDiffusion, make_beta_schedule
+from .unet import UNet
 import logging
 logger = logging.getLogger('base')
 

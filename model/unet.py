@@ -16,6 +16,8 @@ def default(val, d):
     return d() if isfunction(d) else d
 
 # model
+
+
 class Residual(nn.Module):
     def __init__(self, fn):
         super().__init__()

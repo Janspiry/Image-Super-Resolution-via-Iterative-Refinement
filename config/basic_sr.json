@@ -19,7 +19,7 @@
             "r_resolution": 128,
             "batch_size": 8,
             "num_workers": 8,
-            "shuffle": true,
+            "use_shuffle": true,
             "data_len": -1
         },
         "val": {
