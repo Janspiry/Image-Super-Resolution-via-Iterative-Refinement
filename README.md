@@ -26,6 +26,13 @@ Code will come soon.
 
 - [ ] 1024×1024 face generation by a cascade of 3 models
 
+#### Training Step
+
+- [x] log/logger
+- [x] metrics evaluation
+- [ ] resume training
+- [ ] multi-gpu support
+
 
 
 ### Usage
@@ -40,8 +47,6 @@ Code will come soon.
 python prepare.py  --path ffhq_128  --out ffhq --size 16,128
 ```
 
-
-
 #### Train
 
 ```
@@ -55,6 +60,8 @@ python prepare.py  --path ffhq_128  --out ffhq --size 16,128
 ```
 
 ```
+
+
 
 
 

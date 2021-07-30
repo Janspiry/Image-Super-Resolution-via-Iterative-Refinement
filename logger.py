@@ -34,15 +34,10 @@ def parse(args):
     experiments_root = os.path.join(
         'experiments', '{}_{}'.format(opt['name'], get_timestamp()))
     opt['path']['experiments_root'] = experiments_root
-    opt['path']['log'] = os.path.join(
-        experiments_root, opt['path']['log'])
-    opt['path']['tb_logger'] = os.path.join(
-        experiments_root, opt['path']['tb_logger'])
-    opt['path']['results'] = os.path.join(
-        experiments_root, opt['path']['results'])
-
-    mkdirs((path for key, path in opt['path'].items(
-    ) if 'pretrain_model' not in key and 'resume' not in key))
+    for key, path in opt['path'].items():
+        if 'resume' not in key:
+            opt['path'][key] = os.path.join(experiments_root, path)
+            mkdirs(opt['path'][key])
 
     # change dataset length limit
     opt['datasets'][phase]['data_len'] = -1
