@@ -23,17 +23,22 @@ def create_dataloader(dataset, dataset_opt, phase):
 
 def create_dataset(dataset_opt, phase):
     '''create dataset'''
+    need_HR = True
+    need_LR = True
     mode = dataset_opt['mode']
-    if mode == 'LRHR':
-        from data.LRHR_dataset import LRHRDataset as D
-    else:
-        raise NotImplementedError(
-            'Dataset [{:s}] is not recognized.'.format(mode))
+    if mode == 'LR':
+        need_HR = False
+    if mode == 'HR':
+        need_LR = False
+    from data.LRHR_dataset import LRHRDataset as D
     dataset = D(dataroot=dataset_opt['dataroot'],
                 l_resolution=dataset_opt['l_resolution'],
                 r_resolution=dataset_opt['r_resolution'],
                 split=phase,
-                data_len=dataset_opt['r_resolution'])
+                data_len=dataset_opt['r_resolution'],
+                need_HR=need_HR,
+                need_LR=need_LR
+                )
     logger = logging.getLogger('base')
     logger.info('Dataset [{:s} - {:s}] is created.'.format(dataset.__class__.__name__,
                                                            dataset_opt['name']))
