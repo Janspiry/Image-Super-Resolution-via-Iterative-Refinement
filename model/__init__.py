@@ -1,7 +1,29 @@
 from .diffusion import GaussianDiffusion, make_beta_schedule
 from .unet import UNet
 import logging
+from torch import nn
 logger = logging.getLogger('base')
+
+
+def get_network_description(network):
+    '''Get the string and total parameters of the network'''
+    if isinstance(network, nn.DataParallel):
+        network = network.module
+    s = str(network)
+    n = sum(map(lambda x: x.numel(), network.parameters()))
+    return s, n
+
+
+def print_network(net):
+    s, n = get_network_description(net)
+    if isinstance(net, nn.DataParallel):
+        net_struc_str = '{} - {}'.format(net.__class__.__name__,
+                                         net.module.__class__.__name__)
+    else:
+        net_struc_str = '{}'.format(net.__class__.__name__)
+    logger.info('Network G structure: {}, with parameters: {:,d}'.format(
+        net_struc_str, n))
+    logger.info(s)
 
 
 def create_model(opt):
@@ -15,9 +37,10 @@ def create_model(opt):
         out_channel=opt['unet']['out_channel'],
         inner_channel=opt['unet']['inner_channel'],
         channel_mults=opt['unet']['channel_multiplier'],
-        attn_mults=opt['unet']['attn_mults'],
+        attn_res=opt['unet']['attn_res'],
         res_blocks=opt['unet']['res_blocks'],
-        dropout=opt['unet']['dropout']
+        dropout=opt['unet']['dropout'],
+        image_size=opt['diffusion']['image_size']
     )
     diffusion = GaussianDiffusion(
         model,
@@ -28,5 +51,6 @@ def create_model(opt):
         betas=beta,
         conditional=opt['diffusion']['conditional']
     )
-    logger.info('Model [{:s}] is created.')
+    logger.info('Model [{:s}] is created.'.format('DPPM'))
+    print_network(model)
     return diffusion

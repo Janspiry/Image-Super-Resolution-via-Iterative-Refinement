@@ -35,7 +35,7 @@ def create_dataset(dataset_opt, phase):
                 l_resolution=dataset_opt['l_resolution'],
                 r_resolution=dataset_opt['r_resolution'],
                 split=phase,
-                data_len=dataset_opt['r_resolution'],
+                data_len=dataset_opt['data_len'],
                 need_HR=need_HR,
                 need_LR=need_LR
                 )

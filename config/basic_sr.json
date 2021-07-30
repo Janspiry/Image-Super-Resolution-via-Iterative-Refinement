@@ -1,6 +1,6 @@
 {
-    "name": "basic_sr_ffhq",
-    "phase": "train",
+    "name": "debug_basic_sr_ffhq",
+    "phase": "val",
     "gpu_ids": [
         0
     ],
@@ -29,14 +29,14 @@
             "dataroot": "dataset/celebahq",
             "l_resolution": 16,
             "r_resolution": 128,
-            "data_len": 100
+            "data_len": 20
         }
     },
     "model": {
         "unet": {
             "in_channel": 6,
             "out_channel": 3,
-            "inner_channel": 128,
+            "inner_channel": 32,
             "channel_multiplier": [
                 1,
                 2,
@@ -44,8 +44,8 @@
                 8,
                 8
             ],
-            "attn_mults": [
-                8
+            "attn_res": [
+                16
             ],
             "res_blocks": 3,
             "dropout": 0.2
@@ -62,7 +62,7 @@
             "conditional": true
         }
     },
-    "training": {
+    "train": {
         "n_iter": 1000000,
         "val_freq": 5e3,
         "save_checkpoint_freq": 5e3,
@@ -71,8 +71,8 @@
             "type": "adam",
             "lr": 1e-4
         },
-        "scheduler": {
-            "warmup": 5000,
+        "ema_scheduler": {
+            "step_start_ema": 5000,
             "update_ema_every": 1,
             "ema_decay": 0.9999
         }

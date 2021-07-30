@@ -35,7 +35,7 @@ class LRHRDataset(Dataset):
             return self.data_len
         with self.env.begin(write=False) as txn:
             length = txn.get("length".encode("utf-8"))
-        return int(BytesIO(length))
+        return int(length)
 
     def __getitem__(self, index):
         img_HR = None
@@ -55,4 +55,8 @@ class LRHRDataset(Dataset):
                 )
                 img_HR = Image.open(BytesIO(hr_img_bytes))
                 img_HR = self.transform(img_HR)
+        if not self.need_LR:
+            img_LR = img_HR
+        if not self.need_HR:
+            img_HR = img_LR
         return {'LR': img_LR, 'HR': img_HR, 'Index': index}

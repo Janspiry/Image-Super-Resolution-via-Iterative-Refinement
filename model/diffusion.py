@@ -160,7 +160,7 @@ class GaussianDiffusion(nn.Module):
     def p_mean_variance(self, x, t, clip_denoised: bool, condition_x=None):
         if condition_x is not None:
             x_recon = self.predict_start_from_noise(
-                x, t=t, noise=self.denoise_fn(torch.cat([condition_x, x]), t))
+                x, t=t, noise=self.denoise_fn(torch.cat([condition_x, x], dim=1), t))
         else:
             x_recon = self.predict_start_from_noise(
                 x, t=t, noise=self.denoise_fn(x, t))
@@ -195,7 +195,7 @@ class GaussianDiffusion(nn.Module):
                     (b,), i, device=device, dtype=torch.long))
             return img
         else:
-            x = x_in['LR']
+            x = x_in
             shape = x.shape
             b = shape[0]
             img = torch.randn(shape, device=device)
@@ -234,13 +234,13 @@ class GaussianDiffusion(nn.Module):
     def q_sample(self, x_start, t, noise=None):
         noise = default(noise, lambda: torch.randn_like(x_start))
 
-        # fix gama 
+        # fix gama
         return (
             extract(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start +
             extract(self.sqrt_one_minus_alphas_cumprod,
                     t, x_start.shape) * noise
         )
-        # random gama 
+        # random gama
         # x_shape = x_start.shape
         # l = self.alphas_cumprod .gather(-1, t)
         # r = self.alphas_cumprod .gather(-1, t+1)
@@ -250,12 +250,15 @@ class GaussianDiffusion(nn.Module):
         #     nq.sqrt(gama) * x_start + nq.sqrt(1-gama)* noise
         # )
 
-    def p_losses(self, x_in, t, noise=None):
+    def p_losses(self, x_in, noise=None):
         if not self.conditional:
             x_start = x_in
         else:
             x_start = x_in['HR']
-        b, c, h, w = x_start.shape
+        [b, c, h, w] = x_start.shape
+        t = torch.randint(0, self.num_timesteps, (b,),
+                          device=x_start.device).long()
+
         noise = default(noise, lambda: torch.randn_like(x_start))
         x_noisy = self.q_sample(x_start=x_start, t=t, noise=noise)
 
@@ -274,6 +277,4 @@ class GaussianDiffusion(nn.Module):
         return loss
 
     def forward(self, x, *args, **kwargs):
-        b, c, h, w, device, img_size, = *x.shape, x.device, self.image_size
-        t = torch.randint(0, self.num_timesteps, (b,), device=device).long()
-        return self.p_losses(x, t, *args, **kwargs)
+        return self.p_losses(x, *args, **kwargs)

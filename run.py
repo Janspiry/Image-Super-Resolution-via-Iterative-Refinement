@@ -9,6 +9,7 @@ import logger as Logger
 import metrics
 from tensorboardX import SummaryWriter
 import copy
+import os
 
 
 def accumulate(model1, model2, decay=0.9999):
@@ -17,6 +18,20 @@ def accumulate(model1, model2, decay=0.9999):
 
     for k in par1.keys():
         par1[k].data.mul_(decay).add_(par2[k].data, alpha=1 - decay)
+
+
+def set_device(x):
+    if isinstance(x, dict):
+        for key, item in x.items():
+            if item is not None:
+                x[key] = item.cuda()
+    elif isinstance(x, list):
+        for item in x:
+            if item is not None:
+                item = item.cuda()
+    else:
+        x = x.cuda()
+    return x
 
 
 if __name__ == "__main__":
@@ -59,77 +74,119 @@ if __name__ == "__main__":
     # model
     diffusion = Model.create_model(opt['model'])
     ema = copy.deepcopy(diffusion)
-    if opt['training']["optimizer"]["type"] == 'adam':
+    if opt['train']["optimizer"]["type"] == 'adam':
         optimizer = optim.Adam(diffusion.parameters(),
-                               lr=opt['training']["optimizer"]["lr"])
+                               lr=opt['train']["optimizer"]["lr"])
 
     logger.info('Initial Model Finished')
 
     # Train
     current_step = 0
     current_epoch = 0
-    n_iter = opt['training']["scheduler"]
-    step_start_ema = opt['training']["scheduler"]['step_start_ema'],
-    update_ema_every = opt['training']["scheduler"]['update_ema_every'],
-    ema_decay = opt['training']["scheduler"]['ema_decay']
+    n_iter = opt['train']['n_iter']
+    step_start_ema = opt['train']["ema_scheduler"]['step_start_ema']
+    update_ema_every = opt['train']["ema_scheduler"]['update_ema_every']
+    ema_decay = opt['train']["ema_scheduler"]['ema_decay']
 
-    diffusion = diffusion.cuda()
-    ema = ema.cuda()
+    diffusion = set_device(diffusion)
+    ema = set_device(ema)
 
-    while True:
-        for _, train_data in enumerate(train_loader):
-            train_data = train_data.cuda()
+    if opt['phase'] == 'train':
+        while True:
+            for _, train_data in enumerate(train_loader):
+                train_data = set_device(train_data)
+                # training
+                optimizer.zero_grad()
 
-            current_step += 1
+                loss = diffusion(train_data)
+                loss.backward()
+                optimizer.step()
+
+                if current_step % update_ema_every == 0:
+                    accumulate(
+                        ema, diffusion, 0 if current_step < step_start_ema else ema_decay
+                    )
+                # log
+                if current_step % opt['train']['print_freq'] == 0:
+                    message = '<epoch:{:3d}, iter:{:8,d}, loss:{:.3e}> '.format(
+                        current_epoch, current_step, loss)
+                    tb_logger.add_scalar("loss", loss, current_step)
+                    logger.info(message)
+
+                # validation
+                if current_step % opt['train']['val_freq'] == 0:
+                    avg_psnr = 0.0
+                    idx = 0
+
+                    result_path = '{}/{}'.format(opt['path']
+                                                 ['results'], current_epoch)
+                    os.makedirs(result_path, exist_ok=True)
+                    for _,  val_data in enumerate(val_loader):
+                        val_data = set_device(val_data)
+                        idx += 1
+                        sr_img = val_data['LR']
+                        gt_img = val_data['HR']
+                        sr_img = diffusion.super_resolution(sr_img)
+
+                        gt_img = metrics.tensor2img(gt_img)
+                        sr_img = metrics.tensor2img(sr_img)
+                        # generation
+                        avg_psnr += metrics.calculate_psnr(
+                            (1+sr_img) * 127.5, (1+gt_img) * 127.5)
+
+                        metrics.save_img(
+                            gt_img, '{}/{}_real.png'.format(result_path, idx))
+                        metrics.save_img(
+                            sr_img, '{}/{}_gen.png'.format(result_path, idx))
+                    avg_psnr = avg_psnr / idx
+
+                    # log
+                    logger.info('# Validation # PSNR: {:.4e}'.format(avg_psnr))
+                    logger_val = logging.getLogger('val')  # validation logger
+                    logger_val.info('<epoch:{:3d}, iter:{:8,d}> psnr: {:.4e}'.format(
+                        current_epoch, current_step, avg_psnr))
+                    # tensorboard logger
+                    tb_logger.add_scalar('psnr', avg_psnr, current_step)
+
+                    current_step += 1
+                    if current_step > n_iter:
+                        break
             if current_step > n_iter:
                 break
+            current_epoch += 1
+        # save model
+        logger.info('Saving the final model.')
 
-            # training
-            optimizer.zero_grad()
+        logger.info('End of training.')
+    elif opt['phase'] == 'val':
+        avg_psnr = 0.0
+        idx = 0
+        result_path = '{}/{}'.format(opt['path']
+                                     ['results'], 'evaluation')
+        os.makedirs(result_path, exist_ok=True)
+        for _,  val_data in enumerate(val_loader):
+            val_data = set_device(val_data)
+            idx += 1
+            sr_img = val_data['LR']
+            gt_img = val_data['HR']
+            sr_img = diffusion.super_resolution(sr_img)
 
-            loss = diffusion(train_data)
-            loss.backward()
-            optimizer.step()
+            gt_img = metrics.tensor2img(gt_img)
+            sr_img = metrics.tensor2img(sr_img)
+            # generation
+            avg_psnr += metrics.calculate_psnr(
+                (1+sr_img) * 127.5, (1+gt_img) * 127.5)
 
-            if current_step % update_ema_every == 0:
-                accumulate(
-                    ema, diffusion.module, 0 if current_step < step_start_ema else ema_decay
-                )
-            # log
-            if current_step % opt['train']['print_freq'] == 0:
-                message = '<epoch:{:3d}, iter:{:8,d}, loss:{:.3e}> '.format(
-                    current_epoch, current_step, loss)
-                tb_logger.add_scalar("loss", loss, current_step)
-                logger.info(message)
+            metrics.save_img(
+                gt_img, '{}/{}_real.png'.format(result_path, idx))
+            metrics.save_img(
+                sr_img, '{}/{}_gen.png'.format(result_path, idx))
+        avg_psnr = avg_psnr / idx
 
-            # validation
-            if current_step % opt['train']['val_freq'] == 0:
-                avg_psnr = 0.0
-                idx = 0
-                for val_data in val_loader:
-                    idx += 1
-                    sr_img = val_data['LR']
-                    gt_img = val_data['HR']
-
-                    # generation
-                    avg_psnr += metrics.calculate_psnr(
-                        (1+sr_img) * 127.5, (1+gt_img) * 127.5)
-
-                avg_psnr = avg_psnr / idx
-
-                # log
-                logger.info('# Validation # PSNR: {:.4e}'.format(avg_psnr))
-                logger_val = logging.getLogger('val')  # validation logger
-                logger_val.info('<epoch:{:3d}, iter:{:8,d}> psnr: {:.4e}'.format(
-                    current_epoch, current_step, avg_psnr))
-                # tensorboard logger
-                tb_logger.add_scalar('psnr', avg_psnr, current_step)
-
-        if current_step > n_iter:
-            break
-        current_epoch += 1
-
-    # save model
-    logger.info('Saving the final model.')
-
-    logger.info('End of training.')
+        # log
+        logger.info('# Validation # PSNR: {:.4e}'.format(avg_psnr))
+        logger_val = logging.getLogger('val')  # validation logger
+        logger_val.info('<epoch:{:3d}, iter:{:8,d}> psnr: {:.4e}'.format(
+            current_epoch, current_step, avg_psnr))
+        # tensorboard logger
+        tb_logger.add_scalar('psnr', avg_psnr, current_step)
