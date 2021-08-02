@@ -1,6 +1,6 @@
 {
-    "name": "debug_basic_sr_ffhq",
-    "phase": "val",
+    "name": "basic_sr_ffhq",
+    "phase": "train",
     "gpu_ids": [
         0
     ],
@@ -9,7 +9,8 @@
         "tb_logger": "tb_logger",
         "results": "results",
         "checkpoint": "checkpoint",
-        "resume_state": ""
+        "resume_state": null
+        // "resume_state": "experiments/debug_basic_sr_ffhq_210802_151327/checkpoint/I30_E1"
     },
     "datasets": {
         "train": {
@@ -18,25 +19,27 @@
             "dataroot": "dataset/ffhq",
             "l_resolution": 16,
             "r_resolution": 128,
-            "batch_size": 8,
+            "batch_size": 1,
             "num_workers": 8,
             "use_shuffle": true,
             "data_len": -1
         },
         "val": {
             "name": "CelebaHQ",
-            "mode": "LR",
+            "mode": "LRHR",
             "dataroot": "dataset/celebahq",
             "l_resolution": 16,
             "r_resolution": 128,
-            "data_len": 20
+            "data_len": 3
         }
     },
     "model": {
+        "which_model_G": "DDPM",
+        "finetune_norm": false,
         "unet": {
             "in_channel": 6,
             "out_channel": 3,
-            "inner_channel": 32,
+            "inner_channel": 64,
             "channel_multiplier": [
                 1,
                 2,
@@ -64,8 +67,8 @@
     },
     "train": {
         "n_iter": 1000000,
-        "val_freq": 5e3,
-        "save_checkpoint_freq": 5e3,
+        "val_freq": 1e4,
+        "save_checkpoint_freq": 1e4,
         "print_freq": 200,
         "optimizer": {
             "type": "adam",

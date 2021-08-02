@@ -54,10 +54,14 @@ def parse(args):
         opt['distributed'] = False
 
     if 'debug' in opt['name']:
-        opt['train']['val_freq'] = 8
+        opt['train']['val_freq'] = 2
         opt['train']['print_freq'] = 2
-        opt['train']['save_checkpoint_freq'] = 8
+        opt['train']['save_checkpoint_freq'] = 3
         opt['datasets']['train']['batch_size'] = 1
+        opt['model']['beta_schedule']['n_timestep'] = 2
+        opt['datasets']['train']['data_len'] = 6
+        opt['datasets']['val']['data_len'] = 2
+
     return opt
 
 
