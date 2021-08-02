@@ -251,10 +251,7 @@ class GaussianDiffusion(nn.Module):
         # )
 
     def p_losses(self, x_in, noise=None):
-        if not self.conditional:
-            x_start = x_in
-        else:
-            x_start = x_in['HR']
+        x_start = x_in['HR']
         [b, c, h, w] = x_start.shape
         t = torch.randint(0, self.num_timesteps, (b,),
                           device=x_start.device).long()
