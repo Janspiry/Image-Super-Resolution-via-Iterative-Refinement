@@ -30,7 +30,7 @@ Code will come soon.
 
 - [x] log/logger
 - [x] metrics evaluation
-- [ ] resume training
+- [x] resume training
 - [ ] multi-gpu support
 
 
@@ -49,19 +49,16 @@ python prepare.py  --path ffhq_128  --out ffhq --size 16,128
 
 #### Train
 
+```python
+# Edit basic_sr.json to adjust network function and hyperparameters
+python run.py -p train -c config/basic_sr.json
 ```
-
-```
-
-
 
 #### Test
 
+```python
+python run.py -p val -c config/basic_sr.json
 ```
-
-```
-
-
 
 
 

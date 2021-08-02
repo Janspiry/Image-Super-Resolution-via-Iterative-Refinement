@@ -31,6 +31,8 @@ def parse(args):
     opt = json.loads(json_str, object_pairs_hook=OrderedDict)
 
     # set log directory
+    if args.debug:
+        opt['name'] = 'debug_{}'.format(opt['name'])
     experiments_root = os.path.join(
         'experiments', '{}_{}'.format(opt['name'], get_timestamp()))
     opt['path']['experiments_root'] = experiments_root

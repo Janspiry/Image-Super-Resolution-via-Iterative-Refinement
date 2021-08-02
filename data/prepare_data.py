@@ -55,7 +55,8 @@ def prepare(img_path, out_path, n_worker, sizes=(16, 128), resample=Image.BICUBI
         os.makedirs(out_path, exist_ok=True)
         os.makedirs('{}/mini_{}'.format(out_path, sizes[0]), exist_ok=True)
         os.makedirs('{}/hr_{}'.format(out_path, sizes[1]), exist_ok=True)
-        os.makedirs('{}/lr_{}_{}'.format(out_path, sizes[0], sizes[1]), exist_ok=True)
+        os.makedirs('{}/lr_{}_{}'.format(out_path,
+                    sizes[0], sizes[1]), exist_ok=True)
     else:
         env = lmdb.open(out_path, map_size=1024 ** 4, readahead=False)
 
@@ -85,8 +86,9 @@ def prepare(img_path, out_path, n_worker, sizes=(16, 128), resample=Image.BICUBI
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--path', '-p', type=str, default='dataset/ffhq_128')
-    parser.add_argument('--out', '-o', type=str, default='dataset/ffhq')
+    parser.add_argument('--path', '-p', type=str,
+                        default='../dataset/ffhq_128')
+    parser.add_argument('--out', '-o', type=str, default='../dataset/ffhq')
 
     parser.add_argument('--size', type=str, default='16,128')
     parser.add_argument('--n_worker', type=int, default=8)
