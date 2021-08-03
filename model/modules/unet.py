@@ -1,9 +1,8 @@
-import math
 import torch
 from torch import nn
 import torch.nn.functional as F
 from inspect import isfunction
-from einops import rearrange
+from math import sqrt
 
 
 def exists(x):
@@ -15,12 +14,62 @@ def default(val, d):
         return val
     return d() if isfunction(d) else d
 
-# model
+
+# Gama Encoding
+# Code is from https://github.com/ivanvovk/WaveGrad/blob/721c37c216132a2ef0a16adc38439f993998e0b7/model/linear_modulation.py
+class Conv1dWithInitialization():
+    def __init__(self, **kwargs):
+        super(Conv1dWithInitialization, self).__init__()
+        self.conv1d = torch.nn.Conv1d(**kwargs)
+        torch.nn.init.orthogonal_(self.conv1d.weight.data, gain=1)
+
+    def forward(self, x):
+        return self.conv1d(x)
 
 
-class ResBlockGen(nn.Module):
-    def __init__(self, in_channels, out_channels, stride=1):
-        super(ResBlockGen, self).__init__()
+LINEAR_SCALE = 5000
+
+
+class PositionalEncoding():
+    def __init__(self, n_channels):
+        super(PositionalEncoding, self).__init__()
+        self.n_channels = n_channels
+
+    def forward(self, noise_level):
+        if len(noise_level.shape) > 1:
+            noise_level = noise_level.squeeze(-1)
+        half_dim = self.n_channels // 2
+        exponents = torch.arange(half_dim, dtype=torch.float32).to(
+            noise_level) / float(half_dim)
+        exponents = 1e-4 ** exponents
+        exponents = LINEAR_SCALE * \
+            noise_level.unsqueeze(1) * exponents.unsqueeze(0)
+        return torch.cat([exponents.sin(), exponents.cos()], dim=-1)
+
+
+# Resblock Code from BigGAN
+# https: // github.com/sxhxliang/BigGAN-pytorch
+class ResBlockUp(nn.Module):
+    def __init__(self, in_channels, out_channels, noise_channel, stride=1, dropout=0, use_affine_level=False):
+        super(ResBlockUp, self).__init__()
+        self.use_affine_level = use_affine_level
+        if self.use_affine_level:
+            self.noise_func = Conv1dWithInitialization(
+                in_channels=noise_channel,
+                out_channels=out_channels*2,
+                kernel_size=3,
+                stride=1,
+                padding=1
+            )
+        else:
+            self.noise_func = Conv1dWithInitialization(
+                in_channels=noise_channel,
+                out_channels=out_channels,
+                kernel_size=3,
+                stride=1,
+                padding=1
+            )
+
         self.conv1 = nn.Conv2d(in_channels, out_channels, 3, 1, padding=1)
         self.conv2 = nn.Conv2d(out_channels, out_channels, 3, 1, padding=1)
 
@@ -28,31 +77,56 @@ class ResBlockGen(nn.Module):
         self.bn1 = nn.BatchNorm2d(in_channels)
         self.bn2 = nn.BatchNorm2d(out_channels)
 
-        # Initialization
-        # Xavier Initialization
-        nn.init.xavier_uniform(self.conv1.weight.data, 1.0)
-        nn.init.xavier_uniform(self.conv2.weight.data, 1.0)
-
-        self.model = nn.Sequential(
+        self.model1 = nn.Sequential(
             self.bn1,
             nn.ReLU(),
-            nn.Upsample(scale_factor=2),
+            nn.Upsample(scale_factor=2) if stride > 1 else nn.Identity(),
             self.conv1,
+        )
+        self.model2 = nn.Sequential(
             self.bn2,
             nn.ReLU(),
+            nn.Dropout(dropout) if dropout > 0 else nn.Identity(),
             self.conv2
         )
         self.bypass = nn.Sequential()
         if stride != 1:
             self.bypass = nn.Upsample(scale_factor=2)
 
-    def forward(self, x):
-        return self.model(x) + self.bypass(x)
+    def forward(self, x_in, noise_embed):
+        batch = x_in.shape[0]
+        x = self.model1(x_in)
+        if self.use_affine_level:
+            gamma, beta = self.noise_func(noise_embed).view(
+                batch, -1, 1, 1).chunk(2, dim=1)
+            x = (1 + gamma) * x + beta
+        else:
+            x = x + self.noise_func(noise_embed).view(batch, -1, 1, 1)
+
+        return self.model2(x) + self.bypass(x_in)
 
 
-class ResBlockDis(nn.Module):
-    def __init__(self, in_channels, out_channels, stride=1):
-        super(ResBlockDis, self).__init__()
+class ResBlockDown(nn.Module):
+    def __init__(self, in_channels, out_channels, noise_channel, stride=1, dropout=0, use_affine_level=False):
+        super(ResBlockDown, self).__init__()
+        self.use_affine_level = use_affine_level
+        if self.use_affine_level:
+            self.noise_func = Conv1dWithInitialization(
+                in_channels=noise_channel,
+                out_channels=out_channels*2,
+                kernel_size=3,
+                stride=1,
+                padding=1
+            )
+        else:
+            self.noise_func = Conv1dWithInitialization(
+                in_channels=noise_channel,
+                out_channels=out_channels,
+                kernel_size=3,
+                stride=1,
+                padding=1
+            )
+
         self.conv1 = nn.Conv2d(in_channels, out_channels, 3, 1, padding=1)
         self.conv2 = nn.Conv2d(out_channels, out_channels, 3, 1, padding=1)
 
@@ -61,26 +135,21 @@ class ResBlockDis(nn.Module):
         self.bn2 = nn.BatchNorm2d(out_channels)
         self.bn3 = nn.BatchNorm2d(out_channels)
 
-        # Initialization
-        # Xavier Initialization
-        nn.init.xavier_uniform(self.conv1.weight.data, 1.0)
-        nn.init.xavier_uniform(self.conv2.weight.data, 1.0)
-
-        self.model_base = nn.Sequential(
+        self.model_base1 = nn.Sequential(
             nn.ReLU(),
             self.bn1,
-            self.conv1,
+            self.conv1
+        )
+        self.model_base2 = nn.Sequential(
             nn.ReLU(),
             self.bn2,
+            nn.Dropout(dropout) if dropout > 0 else nn.Identity(),
             self.conv2
         )
-
         self.bypass = nn.Sequential()
-        if stride == 1:
-            self.model = self.model_base
-        else:
-            self.model = nn.Sequential(
-                self.model_base,
+        if stride != 1:
+            self.model_base2 = nn.Sequential(
+                self.model_base2,
                 nn.AvgPool2d(2, stride=stride, padding=0)
             )
             # add Bypass
@@ -94,137 +163,21 @@ class ResBlockDis(nn.Module):
             # Xavier Initialization
             nn.init.xavier_uniform(self.bypass_conv.weight.data, 1.4142)
 
-    def forward(self, x):
-        # print('SECOND BLOCK ONWARDS')
-        return self.model(x) + self.bypass(x)
-
-
-class TimeEmbedding(nn.Module):
-    def __init__(self, dim):
-        super().__init__()
-        self.dim = dim
-        inv_freq = torch.exp(
-            torch.arange(0, dim, 2, dtype=torch.float32) *
-            (-math.log(10000) / dim)
-        )
-        self.register_buffer("inv_freq", inv_freq)
-
-    def forward(self, input):
-        shape = input.shape
-        sinusoid_in = torch.ger(input.view(-1).float(), self.inv_freq)
-        pos_emb = torch.cat([sinusoid_in.sin(), sinusoid_in.cos()], dim=-1)
-        pos_emb = pos_emb.view(*shape, self.dim)
-        return pos_emb
+    def forward(self, x_in, noise_embed):
+        batch = x_in.shape[0]
+        x = self.model_base1(x_in)
+        if self.use_affine_level:
+            gamma, beta = self.noise_func(noise_embed).view(
+                batch, -1, 1, 1).chunk(2, dim=1)
+            x = (1 + gamma) * x + beta
+        else:
+            x = x + self.noise_func(noise_embed).view(batch, -1, 1, 1)
+        return self.model_base2(x) + self.bypass(x_in)
 
 
 class Swish(nn.Module):
     def forward(self, x):
         return x * torch.sigmoid(x)
-
-
-class Upsample(nn.Module):
-    def __init__(self, dim):
-        super().__init__()
-        self.up = nn.Upsample(scale_factor=2, mode="nearest")
-        self.conv = nn.Conv2d(dim, dim, 3, padding=1)
-
-    def forward(self, x):
-        return self.conv(self.up(x))
-
-
-class Downsample(nn.Module):
-    def __init__(self, dim):
-        super().__init__()
-        self.conv = nn.Conv2d(dim, dim, 3, 2, 1)
-
-    def forward(self, x):
-        return self.conv(x)
-
-
-# building block modules
-
-
-class Block(nn.Module):
-    def __init__(self, dim, dim_out, groups=32, dropout=0):
-        super().__init__()
-        self.block = nn.Sequential(
-            nn.GroupNorm(groups, dim),
-            Swish(),
-            nn.Dropout(dropout) if dropout != 0 else nn.Identity(),
-            nn.Conv2d(dim, dim_out, 3, padding=1)
-        )
-
-    def forward(self, x):
-        return self.block(x)
-
-
-class ResnetBlock(nn.Module):
-    def __init__(self, dim, dim_out, time_emb_dim=None, dropout=0):
-        super().__init__()
-        self.mlp = nn.Sequential(
-            Swish(),
-            nn.Linear(time_emb_dim, dim_out)
-        ) if exists(time_emb_dim) else None
-
-        self.block1 = Block(dim, dim_out)
-        self.block2 = Block(dim_out, dim_out, dropout=dropout)
-        self.res_conv = nn.Conv2d(
-            dim, dim_out, 1) if dim != dim_out else nn.Identity()
-
-    def forward(self, x, time_emb):
-        h = self.block1(x)
-        if exists(self.mlp):
-            h += self.mlp(time_emb)[:, :, None, None]
-        h = self.block2(h)
-        return h + self.res_conv(x)
-
-
-class SelfAttention(nn.Module):
-    def __init__(self, in_channel, n_head=1):
-        super().__init__()
-
-        self.n_head = n_head
-
-        self.norm = nn.GroupNorm(32, in_channel)
-        self.qkv = nn.Conv2d(in_channel, in_channel * 3, 1, bias=False)
-        self.out = nn.Conv2d(in_channel, in_channel, 1)
-
-    def forward(self, input):
-        batch, channel, height, width = input.shape
-        n_head = self.n_head
-        head_dim = channel // n_head
-
-        norm = self.norm(input)
-        qkv = self.qkv(norm).view(batch, n_head, head_dim * 3, height, width)
-        query, key, value = qkv.chunk(3, dim=2)  # bhdyx
-
-        attn = torch.einsum(
-            "bnchw, bncyx -> bnhwyx", query, key
-        ).contiguous() / math.sqrt(channel)
-        attn = attn.view(batch, n_head, height, width, -1)
-        attn = torch.softmax(attn, -1)
-        attn = attn.view(batch, n_head, height, width, height, width)
-
-        out = torch.einsum("bnhwyx, bncyx -> bnchw", attn, value).contiguous()
-        out = self.out(out.view(batch, channel, height, width))
-
-        return out + input
-
-
-class ResnetBlocWithAttn(nn.Module):
-    def __init__(self, dim, dim_out, *, time_emb_dim=None, dropout=0, with_attn=False):
-        super().__init__()
-        self.with_attn = with_attn
-        self.res_block = ResnetBlock(
-            dim, dim_out, time_emb_dim, dropout=dropout)
-        if with_attn:
-            self.attn = SelfAttention(dim_out)
-
-    def forward(self, x, time_emb):
-        x = self.res_block(x, time_emb)
-        if(self.with_attn):
-            x = self.attn(x)
-        return x
 
 
 class UNet(nn.Module):
@@ -237,89 +190,67 @@ class UNet(nn.Module):
         attn_res=(8),
         res_blocks=3,
         dropout=0,
-        with_time_emb=True,
-        image_size=128
+        use_affine_level=False,
+        image_size=128,
+        skip_range=1.0/sqrt(2)
     ):
         super().__init__()
+        self.noise_mlp = PositionalEncoding(inner_channel*4)
 
-        if with_time_emb:
-            time_dim = inner_channel
-            self.time_mlp = nn.Sequential(
-                TimeEmbedding(inner_channel),
-                nn.Linear(inner_channel, inner_channel * 4),
-                Swish(),
-                nn.Linear(inner_channel * 4, inner_channel)
-            )
-        else:
-            time_dim = None
-            self.time_mlp = None
-
-        num_mults = len(channel_mults)
+        self.start_conv = nn.Conv2d(in_channel, inner_channel,
+                                    kernel_size=3, padding=1)
         pre_channel = inner_channel
-        feat_channels = [pre_channel]
-        now_res = image_size
-        downs = [nn.Conv2d(in_channel, inner_channel,
-                           kernel_size=3, padding=1)]
+        downs = []
+        num_mults = len(channel_mults)
+        self.skip_start = int((1-skip_range)*num_mults*res_blocks)
+
         for ind in range(num_mults):
             is_last = (ind == num_mults - 1)
-            use_attn = (now_res in attn_res)
             channel_mult = inner_channel * channel_mults[ind]
-            for _ in range(0, res_blocks):
-                downs.append(ResnetBlocWithAttn(
-                    pre_channel, channel_mult, time_emb_dim=time_dim, dropout=dropout, with_attn=use_attn))
-                feat_channels.append(channel_mult)
+            for _ in range(0, res_blocks-1):
+                downs.append(ResBlockUp(
+                    pre_channel, channel_mult, use_affine_level=use_affine_level, noise_channel=inner_channel*4, dropout=dropout, stride=1))
                 pre_channel = channel_mult
             if not is_last:
-                downs.append(Downsample(pre_channel))
-                feat_channels.append(pre_channel)
-                now_res = now_res//2
+                downs.append(ResBlockUp(
+                    pre_channel, pre_channel, use_affine_level=use_affine_level, noise_channel=inner_channel*4, dropout=dropout, stride=2))
         self.downs = nn.ModuleList(downs)
-
-        self.mid = nn.ModuleList([
-            ResnetBlocWithAttn(pre_channel, pre_channel, time_emb_dim=time_dim,
-                               dropout=dropout, with_attn=True),
-            ResnetBlocWithAttn(pre_channel, pre_channel,
-                               time_emb_dim=time_dim, dropout=dropout, with_attn=False)
-        ])
 
         ups = []
         for ind in reversed(range(num_mults)):
             is_last = (ind < 1)
-            use_attn = (now_res in attn_res)
             channel_mult = inner_channel * channel_mults[ind]
-            for _ in range(0, res_blocks+1):
-                ups.append(ResnetBlocWithAttn(
-                    pre_channel+feat_channels.pop(), channel_mult, time_emb_dim=time_dim, dropout=dropout, with_attn=use_attn))
+            for _ in range(0, res_blocks-1):
+                ups.append(ResBlockDown(
+                    pre_channel, channel_mult, use_affine_level=use_affine_level, noise_channel=inner_channel*4, dropout=dropout, stride=1))
                 pre_channel = channel_mult
             if not is_last:
-                ups.append(Upsample(pre_channel))
-                now_res = now_res*2
+                ups.append(ResBlockDown(
+                    pre_channel, pre_channel, use_affine_level=use_affine_level, noise_channel=inner_channel*4, dropout=dropout, stride=2))
 
         self.ups = nn.ModuleList(ups)
 
-        self.final_conv = Block(pre_channel, default(out_channel, in_channel))
+        self.final_conv = nn.Sequential(
+            nn.GroupNorm(32, pre_channel),
+            Swish(),
+            nn.Conv2d(pre_channel, default(
+                out_channel, in_channel), 3, padding=1)
+        )
 
-    def forward(self, x, time):
-        t = self.time_mlp(time) if exists(self.time_mlp) else None
-
+    def forward(self, x, noise_level):
+        noise_embed = self.noise_mlp(noise_level)
         feats = []
+        x = self.start_conv(x)
         for layer in self.downs:
-            if isinstance(layer, ResnetBlocWithAttn):
-                x = layer(x, t)
-            else:
-                x = layer(x)
+            x = layer(x, noise_embed)
             feats.append(x)
 
-        for layer in self.mid:
-            if isinstance(layer, ResnetBlocWithAttn):
-                x = layer(x, t)
-            else:
-                x = layer(x)
-
+        idx = 0
         for layer in self.ups:
-            if isinstance(layer, ResnetBlocWithAttn):
-                x = layer(torch.cat((x, feats.pop()), dim=1), t)
+            info = feats.pop()
+            if idx >= self.skip_start:
+                x = layer(x+info, noise_embed)
             else:
-                x = layer(x)
-
+                x = layer(x, noise_embed)
+            idx += 1
         return self.final_conv(x)

@@ -27,7 +27,7 @@ def weights_init_normal(m, std=0.02):
 
 def weights_init_kaiming(m, scale=1):
     classname = m.__class__.__name__
-    if classname.find('Conv') != -1:
+    if classname.find('Conv2d') != -1:
         init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
         m.weight.data *= scale
         if m.bias is not None:
