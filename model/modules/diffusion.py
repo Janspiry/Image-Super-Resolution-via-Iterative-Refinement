@@ -82,7 +82,8 @@ class GaussianDiffusion(nn.Module):
         alphas = 1. - betas
         alphas_cumprod = np.cumprod(alphas, axis=0)
         alphas_cumprod_prev = np.append(1., alphas_cumprod[:-1])
-        self.sqrt_alphas_cumprod_prev = np.sqrt(alphas_cumprod_prev)
+        self.sqrt_alphas_cumprod_prev = np.sqrt(
+            np.append(1., alphas_cumprod))
 
         timesteps, = betas.shape
         self.num_timesteps = int(timesteps)
@@ -195,8 +196,7 @@ class GaussianDiffusion(nn.Module):
     def p_losses(self, x_in, noise=None):
         x_start = x_in['HR']
         [b, c, h, w] = x_start.shape
-        t = torch.randint(0, self.num_timesteps, (b,),
-                          device=x_start.device).long()
+        t = np.random.randint(1, self.num_timesteps + 1)
         continuous_sqrt_alpha_cumprod = torch.FloatTensor(
             np.random.uniform(
                 self.sqrt_alphas_cumprod_prev[t-1],
@@ -204,8 +204,8 @@ class GaussianDiffusion(nn.Module):
                 size=b
             )
         ).to(x_start.device)
-        continuous_sqrt_alpha_cumprod = continuous_sqrt_alpha_cumprod.unsqueeze(
-            -1)
+        continuous_sqrt_alpha_cumprod = continuous_sqrt_alpha_cumprod.view(
+            -1, 1, 1, 1)
 
         noise = default(noise, lambda: torch.randn_like(x_start))
         x_noisy = self.q_sample(

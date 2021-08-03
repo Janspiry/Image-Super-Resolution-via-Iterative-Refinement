@@ -15,22 +15,17 @@ def default(val, d):
     return d() if isfunction(d) else d
 
 
-# Gama Encoding
-# Code is from https://github.com/ivanvovk/WaveGrad/blob/721c37c216132a2ef0a16adc38439f993998e0b7/model/linear_modulation.py
-class Conv1dWithInitialization():
-    def __init__(self, **kwargs):
-        super(Conv1dWithInitialization, self).__init__()
-        self.conv1d = torch.nn.Conv1d(**kwargs)
-        torch.nn.init.orthogonal_(self.conv1d.weight.data, gain=1)
-
+class Swish(nn.Module):
     def forward(self, x):
-        return self.conv1d(x)
+        return x * torch.sigmoid(x)
 
 
+# Gama Encoding
+# Code is learned from WaveGrad https://github.com/ivanvovk/WaveGrad/blob/721c37c216132a2ef0a16adc38439f993998e0b7/model/linear_modulation.py
 LINEAR_SCALE = 5000
 
 
-class PositionalEncoding():
+class PositionalEncoding(nn.Module):
     def __init__(self, n_channels):
         super(PositionalEncoding, self).__init__()
         self.n_channels = n_channels
@@ -47,137 +42,83 @@ class PositionalEncoding():
         return torch.cat([exponents.sin(), exponents.cos()], dim=-1)
 
 
-# Resblock Code from BigGAN
-# https: // github.com/sxhxliang/BigGAN-pytorch
-class ResBlockUp(nn.Module):
-    def __init__(self, in_channels, out_channels, noise_channel, stride=1, dropout=0, use_affine_level=False):
-        super(ResBlockUp, self).__init__()
+class FeatureWiseAffine(nn.Module):
+    def __init__(self, in_channels, out_channels, use_affine_level=False):
+        super(FeatureWiseAffine, self).__init__()
         self.use_affine_level = use_affine_level
-        if self.use_affine_level:
-            self.noise_func = Conv1dWithInitialization(
-                in_channels=noise_channel,
-                out_channels=out_channels*2,
-                kernel_size=3,
-                stride=1,
-                padding=1
-            )
-        else:
-            self.noise_func = Conv1dWithInitialization(
-                in_channels=noise_channel,
-                out_channels=out_channels,
-                kernel_size=3,
-                stride=1,
-                padding=1
-            )
-
-        self.conv1 = nn.Conv2d(in_channels, out_channels, 3, 1, padding=1)
-        self.conv2 = nn.Conv2d(out_channels, out_channels, 3, 1, padding=1)
-
-        # Batch Normalization
-        self.bn1 = nn.BatchNorm2d(in_channels)
-        self.bn2 = nn.BatchNorm2d(out_channels)
-
-        self.model1 = nn.Sequential(
-            self.bn1,
-            nn.ReLU(),
-            nn.Upsample(scale_factor=2) if stride > 1 else nn.Identity(),
-            self.conv1,
+        self.noise_func = nn.Sequential(
+            Swish(),
+            nn.Linear(in_channels, out_channels*(1+self.use_affine_level))
         )
-        self.model2 = nn.Sequential(
-            self.bn2,
-            nn.ReLU(),
-            nn.Dropout(dropout) if dropout > 0 else nn.Identity(),
-            self.conv2
-        )
-        self.bypass = nn.Sequential()
-        if stride != 1:
-            self.bypass = nn.Upsample(scale_factor=2)
 
-    def forward(self, x_in, noise_embed):
-        batch = x_in.shape[0]
-        x = self.model1(x_in)
+    def forward(self, x, noise_embed):
+        batch = x.shape[0]
         if self.use_affine_level:
             gamma, beta = self.noise_func(noise_embed).view(
                 batch, -1, 1, 1).chunk(2, dim=1)
             x = (1 + gamma) * x + beta
         else:
             x = x + self.noise_func(noise_embed).view(batch, -1, 1, 1)
+        return x
 
+
+# Resblock
+# Code is learned from BigGAN https://github.com/sxhxliang/BigGAN-pytorch
+class ResBlockUp(nn.Module):
+    def __init__(self, in_channels, out_channels, noise_channel, stride=1, dropout=0, use_affine_level=False):
+        super(ResBlockUp, self).__init__()
+        self.noise_func = FeatureWiseAffine(
+            noise_channel, out_channels, use_affine_level)
+
+        self.model1 = nn.Sequential(
+            nn.BatchNorm2d(in_channels),
+            nn.ReLU(),
+            nn.Upsample(scale_factor=2) if stride > 1 else nn.Identity(),
+            nn.Conv2d(in_channels, out_channels, 3, 1, padding=1)
+        )
+        self.model2 = nn.Sequential(
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(),
+            nn.Dropout(dropout) if dropout > 0 else nn.Identity(),
+            nn.Conv2d(out_channels, out_channels, 3, 1, padding=1)
+        )
+        self.bypass = nn.Sequential(
+            nn.Upsample(scale_factor=2) if stride > 1 else nn.Identity(),
+            nn.Conv2d(in_channels, out_channels, 1, 1)
+        )
+
+    def forward(self, x_in, noise_embed):
+        x = self.model1(x_in)
+        x = self.noise_func(x, noise_embed)
         return self.model2(x) + self.bypass(x_in)
 
 
 class ResBlockDown(nn.Module):
     def __init__(self, in_channels, out_channels, noise_channel, stride=1, dropout=0, use_affine_level=False):
         super(ResBlockDown, self).__init__()
-        self.use_affine_level = use_affine_level
-        if self.use_affine_level:
-            self.noise_func = Conv1dWithInitialization(
-                in_channels=noise_channel,
-                out_channels=out_channels*2,
-                kernel_size=3,
-                stride=1,
-                padding=1
-            )
-        else:
-            self.noise_func = Conv1dWithInitialization(
-                in_channels=noise_channel,
-                out_channels=out_channels,
-                kernel_size=3,
-                stride=1,
-                padding=1
-            )
-
-        self.conv1 = nn.Conv2d(in_channels, out_channels, 3, 1, padding=1)
-        self.conv2 = nn.Conv2d(out_channels, out_channels, 3, 1, padding=1)
-
-        # Batch Normalization
-        self.bn1 = nn.BatchNorm2d(in_channels)
-        self.bn2 = nn.BatchNorm2d(out_channels)
-        self.bn3 = nn.BatchNorm2d(out_channels)
-
+        self.noise_func = FeatureWiseAffine(
+            noise_channel, out_channels, use_affine_level)
         self.model_base1 = nn.Sequential(
             nn.ReLU(),
-            self.bn1,
-            self.conv1
+            nn.Conv2d(in_channels, out_channels, 3, 1, padding=1)
         )
         self.model_base2 = nn.Sequential(
             nn.ReLU(),
-            self.bn2,
             nn.Dropout(dropout) if dropout > 0 else nn.Identity(),
-            self.conv2
+            nn.Conv2d(out_channels, out_channels, 3, 1, padding=1),
+            nn.AvgPool2d(2, stride=stride,
+                         padding=0) if stride > 1 else nn.Identity()
         )
-        self.bypass = nn.Sequential()
-        if stride != 1:
-            self.model_base2 = nn.Sequential(
-                self.model_base2,
-                nn.AvgPool2d(2, stride=stride, padding=0)
-            )
-            # add Bypass
-            self.bypass_conv = nn.Conv2d(
-                in_channels, out_channels, 1, 1, padding=0)
-            self.bypass = nn.Sequential(
-                self.bn3,
-                self.bypass_conv,
-                nn.AvgPool2d(2, stride=stride, padding=0)
-            )
-            # Xavier Initialization
-            nn.init.xavier_uniform(self.bypass_conv.weight.data, 1.4142)
+        self.bypass = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, 1, 1, padding=0),
+            nn.AvgPool2d(2, stride=stride,
+                         padding=0) if stride > 1 else nn.Identity()
+        )
 
     def forward(self, x_in, noise_embed):
-        batch = x_in.shape[0]
         x = self.model_base1(x_in)
-        if self.use_affine_level:
-            gamma, beta = self.noise_func(noise_embed).view(
-                batch, -1, 1, 1).chunk(2, dim=1)
-            x = (1 + gamma) * x + beta
-        else:
-            x = x + self.noise_func(noise_embed).view(batch, -1, 1, 1)
+        x = self.noise_func(x, noise_embed)
         return self.model_base2(x) + self.bypass(x_in)
-
-
-class Swish(nn.Module):
-    def forward(self, x):
-        return x * torch.sigmoid(x)
 
 
 class UNet(nn.Module):
@@ -195,39 +136,42 @@ class UNet(nn.Module):
         skip_range=1.0/sqrt(2)
     ):
         super().__init__()
-        self.noise_mlp = PositionalEncoding(inner_channel*4)
+        noise_channel = inner_channel*4
+        self.noise_mlp = PositionalEncoding(noise_channel)
 
         self.start_conv = nn.Conv2d(in_channel, inner_channel,
                                     kernel_size=3, padding=1)
         pre_channel = inner_channel
-        downs = []
         num_mults = len(channel_mults)
         self.skip_start = int((1-skip_range)*num_mults*res_blocks)
 
+        downs = []
         for ind in range(num_mults):
             is_last = (ind == num_mults - 1)
             channel_mult = inner_channel * channel_mults[ind]
             for _ in range(0, res_blocks-1):
-                downs.append(ResBlockUp(
-                    pre_channel, channel_mult, use_affine_level=use_affine_level, noise_channel=inner_channel*4, dropout=dropout, stride=1))
+                downs.append(ResBlockDown(
+                    pre_channel, channel_mult, use_affine_level=use_affine_level, noise_channel=noise_channel, dropout=dropout, stride=1))
                 pre_channel = channel_mult
             if not is_last:
-                downs.append(ResBlockUp(
-                    pre_channel, pre_channel, use_affine_level=use_affine_level, noise_channel=inner_channel*4, dropout=dropout, stride=2))
+                downs.append(ResBlockDown(
+                    pre_channel, pre_channel, use_affine_level=use_affine_level, noise_channel=noise_channel, dropout=dropout, stride=2))
         self.downs = nn.ModuleList(downs)
 
         ups = []
         for ind in reversed(range(num_mults)):
-            is_last = (ind < 1)
+            is_last = (ind == num_mults - 1)
             channel_mult = inner_channel * channel_mults[ind]
-            for _ in range(0, res_blocks-1):
-                ups.append(ResBlockDown(
-                    pre_channel, channel_mult, use_affine_level=use_affine_level, noise_channel=inner_channel*4, dropout=dropout, stride=1))
-                pre_channel = channel_mult
+            ups.append(ResBlockUp(
+                pre_channel, channel_mult, use_affine_level=use_affine_level, noise_channel=noise_channel, dropout=dropout, stride=1))
+            pre_channel = channel_mult
             if not is_last:
-                ups.append(ResBlockDown(
-                    pre_channel, pre_channel, use_affine_level=use_affine_level, noise_channel=inner_channel*4, dropout=dropout, stride=2))
-
+                ups.append(ResBlockUp(
+                    pre_channel, pre_channel, use_affine_level=use_affine_level, noise_channel=noise_channel, dropout=dropout, stride=2))
+            for _ in range(0, res_blocks-2):
+                ups.append(ResBlockUp(
+                    pre_channel, channel_mult, use_affine_level=use_affine_level, noise_channel=noise_channel, dropout=dropout, stride=1))
+                pre_channel = channel_mult
         self.ups = nn.ModuleList(ups)
 
         self.final_conv = nn.Sequential(
@@ -248,9 +192,8 @@ class UNet(nn.Module):
         idx = 0
         for layer in self.ups:
             info = feats.pop()
+            x = layer(x, noise_embed)
             if idx >= self.skip_start:
-                x = layer(x+info, noise_embed)
-            else:
-                x = layer(x, noise_embed)
+                x = x + info
             idx += 1
         return self.final_conv(x)
