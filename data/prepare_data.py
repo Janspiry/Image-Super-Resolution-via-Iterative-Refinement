@@ -24,16 +24,16 @@ def image_convert_bytes(img):
 
 
 def resize_multiple(img, sizes=(16, 128), resample=Image.BICUBIC, lmdb_save=False):
-    mini_img = resize_and_convert(img, sizes[0], resample)
+    lr_img = resize_and_convert(img, sizes[0], resample)
     hr_img = resize_and_convert(img, sizes[1], resample)
-    lr_img = resize_and_convert(mini_img, sizes[1], resample)
+    sr_img = resize_and_convert(lr_img, sizes[1], resample)
 
     if lmdb_save:
-        mini_img = image_convert_bytes(mini_img)
-        hr_img = image_convert_bytes(hr_img)
         lr_img = image_convert_bytes(lr_img)
+        hr_img = image_convert_bytes(hr_img)
+        sr_img = image_convert_bytes(sr_img)
 
-    return [mini_img, hr_img, lr_img]
+    return [lr_img, hr_img, sr_img]
 
 
 def resize_worker(img_file, sizes, resample, lmdb_save=False):
@@ -53,9 +53,9 @@ def prepare(img_path, out_path, n_worker, sizes=(16, 128), resample=Image.BICUBI
 
     if not lmdb_save:
         os.makedirs(out_path, exist_ok=True)
-        os.makedirs('{}/mini_{}'.format(out_path, sizes[0]), exist_ok=True)
+        os.makedirs('{}/lr_{}'.format(out_path, sizes[0]), exist_ok=True)
         os.makedirs('{}/hr_{}'.format(out_path, sizes[1]), exist_ok=True)
-        os.makedirs('{}/lr_{}_{}'.format(out_path,
+        os.makedirs('{}/sr_{}_{}'.format(out_path,
                     sizes[0], sizes[1]), exist_ok=True)
     else:
         env = lmdb.open(out_path, map_size=1024 ** 4, readahead=False)
@@ -63,22 +63,22 @@ def prepare(img_path, out_path, n_worker, sizes=(16, 128), resample=Image.BICUBI
     total = 0
     with multiprocessing.Pool(n_worker) as pool:
         for i, imgs in tqdm(pool.imap_unordered(resize_fn, files)):
-            mini_img, hr_img, lr_img = imgs
+            lr_img, hr_img, sr_img = imgs
             if not lmdb_save:
-                mini_img.save(
-                    '{}/mini_{}/{}.png'.format(out_path, sizes[0], i.zfill(5)))
+                lr_img.save(
+                    '{}/lr_{}/{}.png'.format(out_path, sizes[0], i.zfill(5)))
                 hr_img.save(
                     '{}/hr_{}/{}.png'.format(out_path, sizes[1], i.zfill(5)))
-                lr_img.save(
-                    '{}/lr_{}_{}/{}.png'.format(out_path, sizes[0], sizes[1], i.zfill(5)))
+                sr_img.save(
+                    '{}/sr_{}_{}/{}.png'.format(out_path, sizes[0], sizes[1], i.zfill(5)))
             else:
                 with env.begin(write=True) as txn:
-                    txn.put('mini_{}_{}'.format(
-                        sizes[0], i.zfill(5)).encode('utf-8'), mini_img)
+                    txn.put('lr_{}_{}'.format(
+                        sizes[0], i.zfill(5)).encode('utf-8'), lr_img)
                     txn.put('hr_{}_{}'.format(
                         sizes[1], i.zfill(5)).encode('utf-8'), hr_img)
-                    txn.put('lr_{}_{}_{}'.format(
-                        sizes[0], sizes[1], i.zfill(5)).encode('utf-8'), lr_img)
+                    txn.put('sr_{}_{}_{}'.format(
+                        sizes[0], sizes[1], i.zfill(5)).encode('utf-8'), sr_img)
             total += 1
         with env.begin(write=True) as txn:
             txn.put('length'.encode('utf-8'), str(total).encode('utf-8'))
@@ -87,13 +87,14 @@ def prepare(img_path, out_path, n_worker, sizes=(16, 128), resample=Image.BICUBI
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--path', '-p', type=str,
-                        default='../dataset/ffhq_128')
-    parser.add_argument('--out', '-o', type=str, default='../dataset/ffhq')
+                        default='/home/SENSETIME/jiangliangwei/Dataset/celebahq_256')
+    parser.add_argument('--out', '-o', type=str, default='./dataset/celebahq')
 
     parser.add_argument('--size', type=str, default='16,128')
     parser.add_argument('--n_worker', type=int, default=8)
     parser.add_argument('--resample', type=str, default='bicubic')
-    parser.add_argument('--lmdb', '-l', action='store_true')
+    # default save in lmdb format
+    parser.add_argument('--lmdb', '-l', action='store_false')
 
     args = parser.parse_args()
 

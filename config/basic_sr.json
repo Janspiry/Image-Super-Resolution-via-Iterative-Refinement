@@ -15,11 +15,11 @@
     "datasets": {
         "train": {
             "name": "FFHQ",
-            "mode": "LRHR",
+            "mode": "HR",
             "dataroot": "dataset/ffhq",
             "l_resolution": 16,
             "r_resolution": 128,
-            "batch_size": 1,
+            "batch_size": 12,
             "num_workers": 8,
             "use_shuffle": true,
             "data_len": -1

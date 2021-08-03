@@ -42,6 +42,7 @@ def parse(args):
             mkdirs(opt['path'][key])
 
     # change dataset length limit
+    opt['phase'] = phase
     opt['datasets'][phase]['data_len'] = -1
 
     # export CUDA_VISIBLE_DEVICES

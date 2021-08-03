@@ -52,20 +52,21 @@ class DDPM(BaseModel):
         self.netG.eval()
         with torch.no_grad():
             if isinstance(self.netG, nn.DataParallel):
-                self.SR = self.netG.module.super_resolution(self.data['LR'])
+                self.SR = self.netG.module.super_resolution(self.data['SR'])
             else:
-                self.SR = self.netG.super_resolution(self.data['LR'])
+                self.SR = self.netG.super_resolution(self.data['SR'])
         self.netG.train()
 
     def get_current_log(self):
         return self.log_dict
 
-    def get_current_visuals(self, need_HR=True):
+    def get_current_visuals(self, need_LR=True):
         out_dict = OrderedDict()
-        out_dict['LR'] = self.data['LR'].detach()[0].float().cpu()
         out_dict['SR'] = self.SR.detach()[0].float().cpu()
-        if need_HR:
-            out_dict['HR'] = self.data['HR'].detach()[0].float().cpu()
+        out_dict['INF'] = self.data['SR'].detach()[0].float().cpu()
+        out_dict['HR'] = self.data['HR'].detach()[0].float().cpu()
+        if need_LR:
+            out_dict['LR'] = self.data['LR'].detach()[0].float().cpu()
         return out_dict
 
     def print_network(self):

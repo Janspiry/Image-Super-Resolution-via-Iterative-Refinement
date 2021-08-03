@@ -30,7 +30,7 @@ Code will come soon.
 
 - [x] log/logger
 - [x] metrics evaluation
-- [x] resume training
+- [x] resume training 
 - [ ] multi-gpu support
 
 
@@ -43,8 +43,8 @@ Code will come soon.
 - [CelebaHQ 256×256](https://www.kaggle.com/badasstechie/celebahq-resized-256x256)
 
 ```python
-# Resize to get 16×16 MINI_IMGS and 128×128 HR_IMGS, then prepare 128×128 LR_IMGS by bicubic interpolation
-python prepare.py  --path ffhq_128  --out ffhq --size 16,128
+# Resize to get 16×16 LR_IMGS and 128×128 HR_IMGS, then prepare 128×128 Fake SR_IMGS by bicubic interpolation
+python prepare.py  --path [dataset root]  --out [output root] --size 16,128 -l
 ```
 
 #### Train
@@ -57,6 +57,7 @@ python run.py -p train -c config/basic_sr.json
 #### Test
 
 ```python
+# Edit basic_sr.json to add pretrain model path 
 python run.py -p val -c config/basic_sr.json
 ```
 
