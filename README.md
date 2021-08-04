@@ -31,7 +31,7 @@ Code will come soon.
 - [x] log/logger
 - [x] metrics evaluation
 - [x] resume training 
-- [ ] multi-gpu support
+- [x] multi-gpu support
 
 
 
