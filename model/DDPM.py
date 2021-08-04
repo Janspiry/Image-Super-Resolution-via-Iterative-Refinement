@@ -35,6 +35,7 @@ class DDPM(BaseModel):
                 optim_params, lr=opt['train']["optimizer"]["lr"])
             self.log_dict = OrderedDict()
         self.load_network()
+        self.schedule_phase = None
 
     def feed_data(self, data):
         self.data = self.set_device(data)
@@ -56,6 +57,15 @@ class DDPM(BaseModel):
             else:
                 self.SR = self.netG.super_resolution(self.data['SR'])
         self.netG.train()
+
+    def set_new_noise_schedule(self, schedule_opt, schedule_phase='train'):
+        if self.schedule_phase is None or self.schedule_phase != schedule_phase:
+            self.schedule_phase = schedule_phase
+            if isinstance(self.netG, nn.DataParallel):
+                self.netG.module.set_new_noise_schedule(
+                    schedule_opt, self.device)
+            else:
+                self.netG.set_new_noise_schedule(schedule_opt, self.device)
 
     def get_current_log(self):
         return self.log_dict

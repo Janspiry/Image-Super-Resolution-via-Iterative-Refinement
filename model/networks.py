@@ -3,6 +3,7 @@ import logging
 import torch
 import torch.nn as nn
 from torch.nn import init
+from torch.nn import modules
 from .modules import diffusion, unet
 logger = logging.getLogger('base')
 ####################
@@ -82,11 +83,6 @@ def init_weights(net, init_type='kaiming', scale=1, std=0.02):
 # Generator
 def define_G(opt):
     model_opt = opt['model']
-    beta = diffusion.make_beta_schedule(
-        schedule=model_opt['beta_schedule']['schedule'],
-        n_timestep=model_opt['beta_schedule']['n_timestep'],
-        linear_start=model_opt['beta_schedule']['linear_start'],
-        linear_end=model_opt['beta_schedule']['linear_end'])
     model = unet.UNet(
         in_channel=model_opt['unet']['in_channel'],
         out_channel=model_opt['unet']['out_channel'],
@@ -101,10 +97,9 @@ def define_G(opt):
         model,
         image_size=model_opt['diffusion']['image_size'],
         channels=model_opt['diffusion']['channels'],
-        timesteps=model_opt['beta_schedule']['n_timestep'],
         loss_type='l1',    # L1 or L2
-        betas=beta,
-        conditional=model_opt['diffusion']['conditional']
+        conditional=model_opt['diffusion']['conditional'],
+        schedule_opt=model_opt['beta_schedule']['train']
     )
     if opt['phase'] == 'train':
         init_weights(netG, init_type='kaiming', scale=0.1)

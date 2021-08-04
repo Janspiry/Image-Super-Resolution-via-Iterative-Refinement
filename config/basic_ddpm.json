@@ -39,33 +39,26 @@
         "unet": {
             "in_channel": 6,
             "out_channel": 3,
-            "inner_channel": 64,
+            "inner_channel": 128,
             "channel_multiplier": [
                 1,
+                1,
+                2,
                 2,
                 4,
-                8,
-                8
+                4
             ],
             "attn_res": [
                 16
             ],
             "res_blocks": 3,
-            "dropout": 0.2
+            "dropout": 0.0
         },
         "beta_schedule": {
-            "train": {
-                "schedule": "linear",
-                "n_timestep": 2000,
-                "linear_start": 1e-6,
-                "linear_end": 1e-2
-            },
-            "val": {
-                "schedule": "linear",
-                "n_timestep": 100,
-                "linear_start": 1e-6,
-                "linear_end": 1e-2
-            }
+            "schedule": "linear",
+            "n_timestep": 2000,
+            "linear_start": 1e-4,
+            "linear_end": 2e-2
         },
         "diffusion": {
             "image_size": 128,
@@ -80,7 +73,7 @@
         "print_freq": 200,
         "optimizer": {
             "type": "adam",
-            "lr": 3e-5
+            "lr": 2e-5
         },
         "ema_scheduler": {
             "step_start_ema": 5000,

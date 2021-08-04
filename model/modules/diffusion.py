@@ -1,6 +1,6 @@
 import math
 import torch
-from torch import nn, einsum
+from torch import device, nn, einsum
 import torch.nn.functional as F
 from inspect import isfunction
 from functools import partial
@@ -67,18 +67,30 @@ class GaussianDiffusion(nn.Module):
         denoise_fn,
         image_size,
         channels=3,
-        timesteps=1000,
         loss_type='l1',
-        betas=None,
-        conditional=True
+        conditional=True,
+        schedule_opt=None
     ):
         super().__init__()
         self.channels = channels
         self.image_size = image_size
         self.denoise_fn = denoise_fn
-
+        self.loss_type = loss_type
         self.conditional = conditional
-        betas = betas.detach().cpu().numpy() if isinstance(betas, torch.Tensor) else betas
+        if schedule_opt is not None:
+            pass
+            # self.set_new_noise_schedule(schedule_opt)
+
+    def set_new_noise_schedule(self, schedule_opt, device):
+        to_torch = partial(torch.tensor, dtype=torch.float32, device=device)
+
+        betas = make_beta_schedule(
+            schedule=schedule_opt['schedule'],
+            n_timestep=schedule_opt['n_timestep'],
+            linear_start=schedule_opt['linear_start'],
+            linear_end=schedule_opt['linear_end'])
+        betas = betas.detach().cpu().numpy() if isinstance(
+            betas, torch.Tensor) else betas
         alphas = 1. - betas
         alphas_cumprod = np.cumprod(alphas, axis=0)
         alphas_cumprod_prev = np.append(1., alphas_cumprod[:-1])
@@ -87,10 +99,6 @@ class GaussianDiffusion(nn.Module):
 
         timesteps, = betas.shape
         self.num_timesteps = int(timesteps)
-        self.loss_type = loss_type
-
-        to_torch = partial(torch.tensor, dtype=torch.float32)
-
         self.register_buffer('betas', to_torch(betas))
         self.register_buffer('alphas_cumprod', to_torch(alphas_cumprod))
         self.register_buffer('alphas_cumprod_prev',
@@ -135,7 +143,7 @@ class GaussianDiffusion(nn.Module):
     def p_mean_variance(self, x, t, clip_denoised: bool, condition_x=None):
         batch_size = x.shape[0]
         noise_level = torch.FloatTensor(
-            [self.sqrt_alphas_cumprod_prev[t+1]]).repeat(batch_size, 1).to(x)
+            [self.sqrt_alphas_cumprod_prev[t+1]]).repeat(batch_size, 1).to(x.device)
         if condition_x is not None:
             x_recon = self.predict_start_from_noise(
                 x, t=t, noise=self.denoise_fn(torch.cat([condition_x, x], dim=1), noise_level))
