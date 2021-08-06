@@ -19,7 +19,7 @@
             "dataroot": "dataset/ffhq",
             "l_resolution": 16,
             "r_resolution": 128,
-            "batch_size": 4,
+            "batch_size": 12,
             "num_workers": 8,
             "use_shuffle": true,
             "data_len": -1
@@ -39,33 +39,32 @@
         "unet": {
             "in_channel": 6,
             "out_channel": 3,
-            "inner_channel": 128,
+            "inner_channel": 64,
             "channel_multiplier": [
                 1,
-                1,
-                2,
                 2,
                 4,
-                4
+                8,
+                8,
             ],
             "attn_res": [
                 16
             ],
-            "res_blocks": 2,
+            "res_blocks": 3,
             "dropout": 0.2
         },
         "beta_schedule": {
             "train": {
                 "schedule": "linear",
                 "n_timestep": 2000,
-                "linear_start": 1e-6,
-                "linear_end": 1e-2
+                "linear_start": 1e-4,
+                "linear_end": 2e-2
             },
             "val": {
                 "schedule": "linear",
                 "n_timestep": 100,
-                "linear_start": 1e-6,
-                "linear_end": 1e-2
+                "linear_start": 1e-4,
+                "linear_end": 2e-2
             }
         },
         "diffusion": {
