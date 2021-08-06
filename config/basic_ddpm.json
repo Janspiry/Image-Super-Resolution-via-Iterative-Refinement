@@ -42,15 +42,16 @@
             "inner_channel": 64,
             "channel_multiplier": [
                 1,
+                1,
+                2,
                 2,
                 4,
-                8,
-                8,
+                4
             ],
             "attn_res": [
                 16
             ],
-            "res_blocks": 3,
+            "res_blocks": 2,
             "dropout": 0.2
         },
         "beta_schedule": {

@@ -32,9 +32,9 @@ class LRHRDataset(Dataset):
 
     def AugmentWithTransform(self, img_list, hflip=True, rot=False):
         # horizontal flip OR rotate
-        hflip = hflip and (self.split == 'train' and random.random() < 1)
-        vflip = rot and (self.split == 'train' and random.random() < 1)
-        rot90 = rot and (self.split == 'train' and random.random() < 1)
+        hflip = hflip and (self.split == 'train' and random.random() < 0.5)
+        vflip = rot and (self.split == 'train' and random.random() < 0.5)
+        rot90 = rot and (self.split == 'train' and random.random() < 0.5)
 
         def _augment(img):
             if hflip:
