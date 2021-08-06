@@ -1,8 +1,6 @@
 ## Image Super-Resolution via Iterative Refinement
 
-[Paper](https://arxiv.org/pdf/2104.07636.pdf ) 	
-
-[Project](https://iterative-refinement.github.io/ )
+[Paper](https://arxiv.org/pdf/2104.07636.pdf )  [Project](https://iterative-refinement.github.io/ )
 
 
 
@@ -10,7 +8,7 @@
 
 This is a unoffical implementation about **Image Super-Resolution via Iterative Refinement** by **Pytorch**.
 
-Code will come soon.
+Code will come soon and pretrain model will be released after training.
 
 
 
@@ -33,7 +31,11 @@ Code will come soon.
 - [x] resume training 
 - [x] multi-gpu support
 
+### Result 
 
+- ##### 16×16 -> 128×128 on FFHQ-CelebaHQ（Preview)
+
+<img src="./misc/show.png" alt="show" style="zoom:100%;" />
 
 ### Usage
 

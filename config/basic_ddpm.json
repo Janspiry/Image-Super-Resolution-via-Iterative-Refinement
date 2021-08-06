@@ -19,7 +19,7 @@
             "dataroot": "dataset/ffhq",
             "l_resolution": 16,
             "r_resolution": 128,
-            "batch_size": 12,
+            "batch_size": 4,
             "num_workers": 8,
             "use_shuffle": true,
             "data_len": -1
@@ -34,7 +34,7 @@
         }
     },
     "model": {
-        "which_model_G": "DDPM",
+        "which_model_G": "ddpm", //ddpm, sr3
         "finetune_norm": false,
         "unet": {
             "in_channel": 6,
@@ -51,14 +51,22 @@
             "attn_res": [
                 16
             ],
-            "res_blocks": 3,
-            "dropout": 0.0
+            "res_blocks": 2,
+            "dropout": 0.2
         },
         "beta_schedule": {
-            "schedule": "linear",
-            "n_timestep": 2000,
-            "linear_start": 1e-4,
-            "linear_end": 2e-2
+            "train": {
+                "schedule": "linear",
+                "n_timestep": 2000,
+                "linear_start": 1e-6,
+                "linear_end": 1e-2
+            },
+            "val": {
+                "schedule": "linear",
+                "n_timestep": 100,
+                "linear_start": 1e-6,
+                "linear_end": 1e-2
+            }
         },
         "diffusion": {
             "image_size": 128,
@@ -73,7 +81,7 @@
         "print_freq": 200,
         "optimizer": {
             "type": "adam",
-            "lr": 2e-5
+            "lr": 1e-4
         },
         "ema_scheduler": {
             "step_start_ema": 5000,

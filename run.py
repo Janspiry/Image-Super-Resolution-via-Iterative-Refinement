@@ -13,10 +13,10 @@ import numpy as np
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', type=str, default='config/basic_sr.json',
+    parser.add_argument('-c', '--config', type=str, default='config/basic_ddpm.json',
                         help='JSON file for configuration')
     parser.add_argument('-p', '--phase', type=str, choices=['train', 'val'],
-                        help='Run either training or generation', default='train')
+                        help='Run either train(training) or val(generation)', default='train')
     parser.add_argument('-gpu', '--gpu_ids', type=str, default=None)
     parser.add_argument('-debug', '-d', action='store_true')
 
@@ -63,7 +63,7 @@ if __name__ == "__main__":
             current_epoch, current_step))
 
     diffusion.set_new_noise_schedule(
-        opt['model']['beta_schedule'][opt['phase']])
+        opt['model']['beta_schedule'][opt['phase']], schedule_phase=opt['phase'])
     if opt['phase'] == 'train':
         while current_step < n_iter:
             current_epoch += 1
@@ -92,19 +92,12 @@ if __name__ == "__main__":
                     os.makedirs(result_path, exist_ok=True)
 
                     diffusion.set_new_noise_schedule(
-                        opt['model']['beta_schedule']['val'])
+                        opt['model']['beta_schedule']['val'], schedule_phase='val')
                     for _,  val_data in enumerate(val_loader):
                         idx += 1
                         diffusion.feed_data(val_data)
                         diffusion.test()
                         visuals = diffusion.get_current_visuals()
-
-                        tb_logger.add_image(
-                            'Iter_{}'.format(current_step),
-                            torch.cat([(1+visuals['INF'])*127.5, (1+visuals['SR'])
-                                      * 127.5, (1+visuals['HR'])*127.5], dim=-1),
-                            idx)
-
                         sr_img = Metrics.tensor2img(visuals['SR'])  # uint8
                         hr_img = Metrics.tensor2img(visuals['HR'])  # uint8
                         lr_img = Metrics.tensor2img(visuals['LR'])  # uint8
@@ -119,13 +112,17 @@ if __name__ == "__main__":
                             lr_img, '{}/{}_{}_lr.png'.format(result_path, current_step, idx))
                         Metrics.save_img(
                             fake_img, '{}/{}_{}_inf.png'.format(result_path, current_step, idx))
-
+                        tb_logger.add_image(
+                            'Iter_{}'.format(current_step),
+                            np.transpose(np.concatenate(
+                                (fake_img, sr_img, hr_img), axis=1), [2, 0, 1]),
+                            idx)
                         avg_psnr += Metrics.calculate_psnr(
                             sr_img, hr_img)
 
                     avg_psnr = avg_psnr / idx
                     diffusion.set_new_noise_schedule(
-                        opt['model']['beta_schedule']['train'])
+                        opt['model']['beta_schedule']['train'], schedule_phase='train')
                     # log
                     logger.info('# Validation # PSNR: {:.4e}'.format(avg_psnr))
                     logger_val = logging.getLogger('val')  # validation logger

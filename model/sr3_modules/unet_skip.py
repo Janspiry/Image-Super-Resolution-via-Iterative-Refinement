@@ -47,7 +47,6 @@ class FeatureWiseAffine(nn.Module):
         super(FeatureWiseAffine, self).__init__()
         self.use_affine_level = use_affine_level
         self.noise_func = nn.Sequential(
-            Swish(),
             nn.Linear(in_channels, out_channels*(1+self.use_affine_level))
         )
 
@@ -175,8 +174,8 @@ class UNet(nn.Module):
         self.ups = nn.ModuleList(ups)
 
         self.final_conv = nn.Sequential(
-            nn.GroupNorm(32, pre_channel),
-            Swish(),
+            nn.BatchNorm2d(pre_channel),
+            nn.ReLU(),
             nn.Conv2d(pre_channel, default(
                 out_channel, in_channel), 3, padding=1)
         )

@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 from torch.nn import init
 from torch.nn import modules
-from .modules import diffusion, unet
 logger = logging.getLogger('base')
 ####################
 # initialize
@@ -83,6 +82,11 @@ def init_weights(net, init_type='kaiming', scale=1, std=0.02):
 # Generator
 def define_G(opt):
     model_opt = opt['model']
+    if model_opt['which_model_G'] == 'ddpm':
+        from .ddpm_modules import diffusion, unet
+    elif model_opt['which_model_G'] == 'sr3':
+        from .sr3_modules import diffusion, unet
+
     model = unet.UNet(
         in_channel=model_opt['unet']['in_channel'],
         out_channel=model_opt['unet']['out_channel'],
