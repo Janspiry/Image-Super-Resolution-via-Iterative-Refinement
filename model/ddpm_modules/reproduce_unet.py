@@ -3,8 +3,6 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from inspect import isfunction
-from einops import rearrange
-
 
 def exists(x):
     return x is not None

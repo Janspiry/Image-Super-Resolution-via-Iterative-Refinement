@@ -49,13 +49,15 @@ class DDPM(BaseModel):
         # set log
         self.log_dict['l_pix'] = l_pix.item()
 
-    def test(self):
+    def test(self, continous=False):
         self.netG.eval()
         with torch.no_grad():
             if isinstance(self.netG, nn.DataParallel):
-                self.SR = self.netG.module.super_resolution(self.data['SR'])
+                self.SR = self.netG.module.super_resolution(
+                    self.data['SR'], continous)
             else:
-                self.SR = self.netG.super_resolution(self.data['SR'])
+                self.SR = self.netG.super_resolution(
+                    self.data['SR'], continous)
         self.netG.train()
 
     def set_new_noise_schedule(self, schedule_opt, schedule_phase='train'):
@@ -72,11 +74,11 @@ class DDPM(BaseModel):
 
     def get_current_visuals(self, need_LR=True):
         out_dict = OrderedDict()
-        out_dict['SR'] = self.SR.detach()[0].float().cpu()
-        out_dict['INF'] = self.data['SR'].detach()[0].float().cpu()
-        out_dict['HR'] = self.data['HR'].detach()[0].float().cpu()
+        out_dict['SR'] = self.SR.detach().float().cpu()
+        out_dict['INF'] = self.data['SR'].detach().float().cpu()
+        out_dict['HR'] = self.data['HR'].detach().float().cpu()
         if need_LR:
-            out_dict['LR'] = self.data['LR'].detach()[0].float().cpu()
+            out_dict['LR'] = self.data['LR'].detach().float().cpu()
         return out_dict
 
     def print_network(self):

@@ -3,7 +3,6 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from inspect import isfunction
-from einops import rearrange
 
 
 def exists(x):
@@ -18,24 +17,58 @@ def default(val, d):
 # model
 
 
-LINEAR_SCALE = 5000
+# LINEAR_SCALE = 5000
 
+
+# class PositionalEncoding(nn.Module):
+#     def __init__(self, n_channels):
+#         super(PositionalEncoding, self).__init__()
+#         self.n_channels = n_channels
+
+#     def forward(self, noise_level):
+#         if len(noise_level.shape) > 1:
+#             noise_level = noise_level.squeeze(-1)
+#         half_dim = self.n_channels // 2
+#         exponents = torch.arange(half_dim, dtype=torch.float32).to(
+#             noise_level) / float(half_dim)
+#         exponents = 1e-4 ** exponents
+#         exponents = LINEAR_SCALE * \
+#             noise_level.unsqueeze(1) * exponents.unsqueeze(0)
+#         return torch.cat([exponents.sin(), exponents.cos()], dim=-1)
 
 class PositionalEncoding(nn.Module):
-    def __init__(self, n_channels):
-        super(PositionalEncoding, self).__init__()
-        self.n_channels = n_channels
+    def __init__(self, dim):
+        super().__init__()
+        self.dim = dim
 
     def forward(self, noise_level):
-        if len(noise_level.shape) > 1:
-            noise_level = noise_level.squeeze(-1)
-        half_dim = self.n_channels // 2
-        exponents = torch.arange(half_dim, dtype=torch.float32).to(
-            noise_level) / float(half_dim)
-        exponents = 1e-4 ** exponents
-        exponents = LINEAR_SCALE * \
-            noise_level.unsqueeze(1) * exponents.unsqueeze(0)
-        return torch.cat([exponents.sin(), exponents.cos()], dim=-1)
+        count = self.dim // 2
+        step = torch.arange(count, dtype=noise_level.dtype,
+                            device=noise_level.device) / count
+        encoding = noise_level.unsqueeze(
+            1) * torch.exp(-math.log(1e4) * step.unsqueeze(0))
+        encoding = torch.cat(
+            [torch.sin(encoding), torch.cos(encoding)], dim=-1)
+        return encoding
+
+
+class FeatureWiseAffine(nn.Module):
+    def __init__(self, in_channels, out_channels, use_affine_level=False):
+        super(FeatureWiseAffine, self).__init__()
+        self.use_affine_level = use_affine_level
+        self.noise_func = nn.Sequential(
+            nn.Linear(in_channels, out_channels*(1+self.use_affine_level))
+        )
+
+    def forward(self, x, noise_embed):
+        batch = x.shape[0]
+        if self.use_affine_level:
+            gamma, beta = self.noise_func(noise_embed).view(
+                batch, -1, 1, 1).chunk(2, dim=1)
+            x = (1 + gamma) * x + beta
+        else:
+            x = x + self.noise_func(noise_embed).view(batch, -1, 1, 1)
+        return x
 
 
 class Swish(nn.Module):
@@ -80,12 +113,10 @@ class Block(nn.Module):
 
 
 class ResnetBlock(nn.Module):
-    def __init__(self, dim, dim_out, noise_level_emb_dim=None, dropout=0):
+    def __init__(self, dim, dim_out, noise_level_emb_dim=None, dropout=0, use_affine_level=True):
         super().__init__()
-        self.mlp = nn.Sequential(
-            Swish(),
-            nn.Linear(noise_level_emb_dim, dim_out)
-        ) if exists(noise_level_emb_dim) else None
+        self.noise_func = FeatureWiseAffine(
+            noise_level_emb_dim, dim_out, use_affine_level)
 
         self.block1 = Block(dim, dim_out)
         self.block2 = Block(dim_out, dim_out, dropout=dropout)
@@ -95,8 +126,7 @@ class ResnetBlock(nn.Module):
     def forward(self, x, time_emb):
         b, c, h, w = x.shape
         h = self.block1(x)
-        if exists(self.mlp):
-            h += (self.mlp(time_emb)).view(b, -1, 1, 1)
+        h = self.noise_func(h, time_emb)
         h = self.block2(h)
         return h + self.res_conv(x)
 

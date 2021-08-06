@@ -1,5 +1,6 @@
 
 from numpy.core.shape_base import hstack
+from numpy.random import sample
 import torch
 import data as Data
 import model as Model
@@ -13,10 +14,10 @@ import numpy as np
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', type=str, default='config/basic_ddpm.json',
+    parser.add_argument('-c', '--config', type=str, default='config/basic_sr3.json',
                         help='JSON file for configuration')
     parser.add_argument('-p', '--phase', type=str, choices=['train', 'val'],
-                        help='Run either train(training) or val(generation)', default='train')
+                        help='Run either train(training) or val(generation)', default='val')
     parser.add_argument('-gpu', '--gpu_ids', type=str, default=None)
     parser.add_argument('-debug', '-d', action='store_true')
 
@@ -96,7 +97,7 @@ if __name__ == "__main__":
                     for _,  val_data in enumerate(val_loader):
                         idx += 1
                         diffusion.feed_data(val_data)
-                        diffusion.test()
+                        diffusion.test(continous=False)
                         visuals = diffusion.get_current_visuals()
                         sr_img = Metrics.tensor2img(visuals['SR'])  # uint8
                         hr_img = Metrics.tensor2img(visuals['HR'])  # uint8
@@ -147,32 +148,39 @@ if __name__ == "__main__":
         for _,  val_data in enumerate(val_loader):
             idx += 1
             diffusion.feed_data(val_data)
-            diffusion.test()
+            diffusion.test(continous=True)
             visuals = diffusion.get_current_visuals()
 
-            sr_img = Metrics.tensor2img(visuals['SR'])  # uint8
             hr_img = Metrics.tensor2img(visuals['HR'])  # uint8
             lr_img = Metrics.tensor2img(visuals['LR'])  # uint8
             fake_img = Metrics.tensor2img(visuals['INF'])  # uint8
 
-            # generation
+            sr_img_mode = 'single'
+            if sr_img_mode == 'single':
+                # single img series
+                sr_img = visuals['SR']  # uint8
+                sample_num = sr_img.shape[0]
+                for iter in range(0, sample_num):
+                    Metrics.save_img(
+                        Metrics.tensor2img(sr_img[iter]), '{}/{}_{}_sr_{}.png'.format(result_path, current_step, idx, iter))
+            else:
+                # grid img
+                sr_img = Metrics.tensor2img(visuals['SR'])  # uint8
+                Metrics.save_img(
+                    sr_img, '{}/{}_{}_sr.png'.format(result_path, current_step, idx))
+
             Metrics.save_img(
                 hr_img, '{}/{}_{}_hr.png'.format(result_path, current_step, idx))
-            Metrics.save_img(
-                sr_img, '{}/{}_{}_sr.png'.format(result_path, current_step, idx))
             Metrics.save_img(
                 lr_img, '{}/{}_{}_lr.png'.format(result_path, current_step, idx))
             Metrics.save_img(
                 fake_img, '{}/{}_{}_inf.png'.format(result_path, current_step, idx))
 
-            tb_logger.add_image(
-                'Iter_{}'.format(current_step),
-                np.transpose(np.concatenate(
-                    (fake_img, sr_img, hr_img), axis=1), [2, 0, 1]),
-                idx)
             # generation
-            avg_psnr += Metrics.calculate_psnr(sr_img, hr_img)
-            avg_ssim += Metrics.calculate_ssim(sr_img, hr_img)
+            avg_psnr += Metrics.calculate_psnr(
+                Metrics.tensor2img(visuals['SR'][-1]), hr_img)
+            avg_ssim += Metrics.calculate_ssim(
+                Metrics.tensor2img(visuals['SR'][-1]), hr_img)
         avg_psnr = avg_psnr / idx
         avg_ssim = avg_ssim / idx
 
