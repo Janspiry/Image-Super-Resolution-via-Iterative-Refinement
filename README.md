@@ -8,21 +8,20 @@
 
 This is a unoffical implementation about **Image Super-Resolution via Iterative Refinement(SR3)** by **Pytorch**.
 
-There are some implements with paper description, which maybe different with actual SR3 structure due to details missing.
+There are some implements with paper description, which maybe different with actual `SR3` structure due to details missing.
 
-- We used the Res-Net block and channel concatenation style in vanilla DDPM.
-- We used the attention mechanism in low resolution feature(16×16 ) like vanilla DDPM.
-- We encoding the gama as FilM strcutrue did in Wave Grad, and embedding it without affine.
+- We used the Res-Net block and channel concatenation style in vanilla `DDPM`.
+- We used the attention mechanism in low resolution feature(16×16 ) like vanilla `DDPM`.
+- We encoding the gama as `FilM` strcutrue did in `Wave Grad`, and embedding it without affine transformation.
 
 
 
-### Todo
+### Finished/Todo
 
 #### Conditional generation(super resolution)
 
 - [x] 16×16 -> 128×128 on FFHQ-CelebaHQ
 - [ ] 64×64 -> 512×512 on FFHQ-CelebaHQ
-- [ ] 64×64 -> 256×256 on ImageNet 
 
 #### Unconditional generation
 
@@ -32,12 +31,12 @@ There are some implements with paper description, which maybe different with act
 
 - [x] log/logger
 - [x] metrics evaluation
-- [x] resume training 
 - [x] multi-gpu support
+- [x] resume training/pretrain model
 
 
 
-### Result (preview version only)
+### Result
 
 We set the maximum reverse steps budget to 2000 now.
 
@@ -70,7 +69,9 @@ python prepare.py  --path [dataset root]  --out [output root] --size 16,128 -l
 
 | Tasks                             | Google Drive                                                 | Aliyun Drive                              |
 | --------------------------------- | ------------------------------------------------------------ | ----------------------------------------- |
-| 16×16 -> 128×128 on FFHQ-CelebaHQ | https://drive.google.com/drive/folders/12jh0K8XoM1FqpeByXvugHHAF3oAZ8KRu?usp=sharing | https://www.aliyundrive.com/s/EJXxgxqKy9z |
+| 16×16 -> 128×128 on FFHQ-CelebaHQ | [checkpoint](https://drive.google.com/drive/folders/12jh0K8XoM1FqpeByXvugHHAF3oAZ8KRu?usp=sharing) | [checkpoint](https://www.aliyundrive.com/s/EJXxgxqKy9z) |
+
+
 
 ```
 # Download the pretrain model and edit basic_ddpm.json about "resume_state":
