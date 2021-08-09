@@ -56,18 +56,18 @@ class LRHRDataset(Dataset):
                     'lr_{}_{}'.format(
                         self.l_res, str(index).zfill(5)).encode('utf-8')
                 )
-                img_LR = Image.open(BytesIO(lr_img_bytes))
+                img_LR = Image.open(BytesIO(lr_img_bytes)).convert("RGB")
             hr_img_bytes = txn.get(
                 'hr_{}_{}'.format(
                     self.r_res, str(index).zfill(5)).encode('utf-8')
             )
-            img_HR = Image.open(BytesIO(hr_img_bytes))
+            img_HR = Image.open(BytesIO(hr_img_bytes)).convert("RGB")
 
             sr_img_bytes = txn.get(
                 'sr_{}_{}_{}'.format(
                     self.l_res, self.r_res, str(index).zfill(5)).encode('utf-8')
             )
-            img_SR = Image.open(BytesIO(sr_img_bytes))
+            img_SR = Image.open(BytesIO(sr_img_bytes)).convert("RGB")
         if self.need_LR:
             [img_LR, img_SR, img_HR] = self.AugmentWithTransform(
                 [img_LR, img_SR, img_HR])

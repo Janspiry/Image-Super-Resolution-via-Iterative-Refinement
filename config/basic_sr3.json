@@ -9,8 +9,8 @@
         "tb_logger": "tb_logger",
         "results": "results",
         "checkpoint": "checkpoint",
-        "resume_state": null
-        // "resume_state": "experiments/debug_basic_sr_ffhq_210802_151327/checkpoint/I30_E1"
+        // "resume_state": null
+        "resume_state": "experiments/basic_sr_ffhq_210806_204158/checkpoint/I640000_E37"
     },
     "datasets": {
         "train": {
@@ -30,7 +30,7 @@
             "dataroot": "dataset/celebahq",
             "l_resolution": 16,
             "r_resolution": 128,
-            "data_len": 3
+            "data_len": 50
         }
     },
     "model": {
@@ -39,7 +39,7 @@
         "unet": {
             "in_channel": 6,
             "out_channel": 3,
-            "inner_channel": 128,
+            "inner_channel": 64,
             "channel_multiplier": [
                 1,
                 2,
@@ -50,7 +50,7 @@
             "attn_res": [
                 16
             ],
-            "res_blocks": 3,
+            "res_blocks": 2,
             "dropout": 0.2
         },
         "beta_schedule": {
@@ -62,7 +62,7 @@
             },
             "val": {
                 "schedule": "linear",
-                "n_timestep": 100,
+                "n_timestep": 2000,
                 "linear_start": 1e-6,
                 "linear_end": 1e-2
             }

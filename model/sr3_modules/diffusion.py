@@ -168,7 +168,7 @@ class GaussianDiffusion(nn.Module):
     @torch.no_grad()
     def p_sample_loop(self, x_in, continous=False):
         device = self.betas.device
-        sample_inter = self.num_timesteps//10
+        sample_inter = (1 | (self.num_timesteps//10))
         if not self.conditional:
             shape = x_in
             img = torch.randn(shape, device=device)

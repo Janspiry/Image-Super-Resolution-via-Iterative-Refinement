@@ -43,7 +43,7 @@ def parse(args):
 
     # change dataset length limit
     opt['phase'] = phase
-    opt['datasets'][phase]['data_len'] = -1
+    # opt['datasets'][phase]['data_len'] = -1
 
     # export CUDA_VISIBLE_DEVICES
     if gpu_ids is not None:

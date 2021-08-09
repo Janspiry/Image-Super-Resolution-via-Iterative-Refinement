@@ -34,8 +34,10 @@ class DDPM(BaseModel):
             self.optG = torch.optim.Adam(
                 optim_params, lr=opt['train']["optimizer"]["lr"])
             self.log_dict = OrderedDict()
-        self.load_network()
         self.schedule_phase = None
+        self.set_new_noise_schedule(
+            opt['model']['beta_schedule'][opt['phase']], schedule_phase=opt['phase'])
+        self.load_network()
 
     def feed_data(self, data):
         self.data = self.set_device(data)
@@ -128,6 +130,8 @@ class DDPM(BaseModel):
                 network = network.module
             network.load_state_dict(torch.load(
                 gen_path), strict=(not self.opt['model']['finetune_norm']))
+            # network.load_state_dict(torch.load(
+            #     gen_path), strict=False)
             if self.opt['phase'] == 'train':
                 # optimizer
                 opt = torch.load(opt_path)

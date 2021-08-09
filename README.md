@@ -31,11 +31,31 @@ Code will come soon and pretrain model will be released after training.
 - [x] resume training 
 - [x] multi-gpu support
 
-### Result 
 
-- ##### 16×16 -> 128×128 on FFHQ-CelebaHQ（Preview)
 
-<img src="./misc/show.png" alt="show" style="zoom:100%;" />
+### Result (preview version only)
+
+We set the maximum reverse steps budget to 2000 now.
+
+| Tasks/Metrics        | **SSIM** | **PSNR** |
+| -------------------- | -------- | -------- |
+| **16×16 -> 128×128** | 0.675    | 23.26    |
+| 64×64 -> 512×512     |          |          |
+| 1024×1024            |          |          |
+
+- ##### 16×16 -> 128×128 on FFHQ-CelebaHQ 
+<center>
+<figure>
+<img src="./misc/sr_process_16_128_0.png" alt="show" style="zoom:90%;" />
+<img src="./misc/sr_process_16_128_1.png" alt="show" style="zoom:90%;" />
+<img src="./misc/sr_process_16_128_2.png" alt="show" style="zoom:90%;" />
+</figure>
+</center>
+
+
+
+
+
 
 ### Usage
 
@@ -61,6 +81,12 @@ python run.py -p train -c config/basic_sr.json
 ```python
 # Edit basic_sr.json to add pretrain model path 
 python run.py -p val -c config/basic_sr.json
+```
+
+#### Evaluation
+```python
+# Quantitative evaluation using SSIM/PSNR metrics on given dataset root
+python eval.py -p [dataset root]
 ```
 
 

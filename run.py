@@ -14,10 +14,10 @@ import numpy as np
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', type=str, default='config/basic_ddpm.json',
+    parser.add_argument('-c', '--config', type=str, default='config/basic_sr3.json',
                         help='JSON file for configuration')
     parser.add_argument('-p', '--phase', type=str, choices=['train', 'val'],
-                        help='Run either train(training) or val(generation)', default='val')
+                        help='Run either train(training) or val(generation)', default='train')
     parser.add_argument('-gpu', '--gpu_ids', type=str, default=None)
     parser.add_argument('-debug', '-d', action='store_true')
 
@@ -142,8 +142,7 @@ if __name__ == "__main__":
         avg_psnr = 0.0
         avg_ssim = 0.0
         idx = 0
-        result_path = '{}/{}'.format(opt['path']
-                                     ['results'], current_epoch)
+        result_path = '{}'.format(opt['path']['results'])
         os.makedirs(result_path, exist_ok=True)
         for _,  val_data in enumerate(val_loader):
             idx += 1
@@ -155,7 +154,7 @@ if __name__ == "__main__":
             lr_img = Metrics.tensor2img(visuals['LR'])  # uint8
             fake_img = Metrics.tensor2img(visuals['INF'])  # uint8
 
-            sr_img_mode = 'single'
+            sr_img_mode = 'grid'
             if sr_img_mode == 'single':
                 # single img series
                 sr_img = visuals['SR']  # uint8
@@ -167,7 +166,9 @@ if __name__ == "__main__":
                 # grid img
                 sr_img = Metrics.tensor2img(visuals['SR'])  # uint8
                 Metrics.save_img(
-                    sr_img, '{}/{}_{}_sr.png'.format(result_path, current_step, idx))
+                    sr_img, '{}/{}_{}_sr_process.png'.format(result_path, current_step, idx))
+                Metrics.save_img(
+                    Metrics.tensor2img(visuals['SR'][-1]), '{}/{}_{}_sr.png'.format(result_path, current_step, idx))
 
             Metrics.save_img(
                 hr_img, '{}/{}_{}_hr.png'.format(result_path, current_step, idx))
