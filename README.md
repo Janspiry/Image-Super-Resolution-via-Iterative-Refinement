@@ -8,15 +8,15 @@
 
 This is a unoffical implementation about **Image Super-Resolution via Iterative Refinement(SR3)** by **Pytorch**.
 
-There are some implements with paper description, which maybe different with actual `SR3` structure due to details missing.
+There are some implement details with paper description, which maybe different with actual `SR3` structure due to details missing.
 
 - We used the Res-Net block and channel concatenation style in vanilla `DDPM`.
-- We used the attention mechanism in low resolution feature(16×16 ) like vanilla `DDPM`.
+- We used the attention mechanism in low resolution feature(16×16) like vanilla `DDPM`.
 - We encoding the gama as `FilM` strcutrue did in `Wave Grad`, and embedding it without affine transformation.
 
 
 
-### Finished/Todo
+### Status
 
 #### Conditional generation(super resolution)
 
@@ -36,7 +36,7 @@ There are some implements with paper description, which maybe different with act
 
 
 
-### Result
+### Results
 
 We set the maximum reverse steps budget to 2000 now.
 
@@ -67,11 +67,11 @@ python prepare.py  --path [dataset root]  --out [output root] --size 16,128 -l
 
 #### Pretrain Model
 
-| Tasks                             | Google Drive                                                 | Aliyun Drive                              |
-| --------------------------------- | ------------------------------------------------------------ | ----------------------------------------- |
-| 16×16 -> 128×128 on FFHQ-CelebaHQ | [checkpoint](https://drive.google.com/drive/folders/12jh0K8XoM1FqpeByXvugHHAF3oAZ8KRu?usp=sharing) | [checkpoint](https://www.aliyundrive.com/s/EJXxgxqKy9z) |
+This paper is based on "Denoising Diffusion Probabilistic Models", and we build both `DDPM/SR3` network structure due to the lack of network details, which use timesteps/gama as model embedding input, respectively.  You can use  different json files to train different models, and they have similar performance according to our experiments.
 
-
+| Tasks                             | Google Drive                                                 | Aliyun Drive                                     |
+| --------------------------------- | ------------------------------------------------------------ | ------------------------------------------------ |
+| 16×16 -> 128×128 on FFHQ-CelebaHQ | [SR3](https://drive.google.com/drive/folders/12jh0K8XoM1FqpeByXvugHHAF3oAZ8KRu?usp=sharing) | [SR3](https://www.aliyundrive.com/s/EJXxgxqKy9z) |
 
 ```
 # Download the pretrain model and edit basic_ddpm.json about "resume_state":
@@ -89,14 +89,14 @@ We have not trained the model until converged for time reason, which means there
 python run.py -p train -c config/basic_sr3.json
 ```
 
-#### Test
+#### Test/Evaluation
 
 ```python
 # Edit basic_sr3.json to add pretrain model path 
 python run.py -p val -c config/basic_sr3.json
 ```
 
-#### Evaluation
+#### Evaluation Alone
 ```python
 # Quantitative evaluation using SSIM/PSNR metrics on given dataset root
 python eval.py -p [dataset root]
@@ -106,19 +106,19 @@ python eval.py -p [dataset root]
 
 ### Acknowledge
 
-Our work is based on the following theoretical work:
+Our work is based on the following theoretical works:
 
-1. [Denoising Diffusion Probabilistic Models](https://arxiv.org/pdf/2006.11239.pdf)
-2. [Image Super-Resolution via Iterative Refinement](https://arxiv.org/pdf/2104.07636.pdf)
-3. [WaveGrad: Estimating Gradients for Waveform Generation](https://arxiv.org/abs/2009.00713)
-4. [Large Scale GAN Training for High Fidelity Natural Image Synthesis](https://arxiv.org/abs/1809.11096)
+- [Denoising Diffusion Probabilistic Models](https://arxiv.org/pdf/2006.11239.pdf)
+- [Image Super-Resolution via Iterative Refinement](https://arxiv.org/pdf/2104.07636.pdf)
+- [WaveGrad: Estimating Gradients for Waveform Generation](https://arxiv.org/abs/2009.00713)
+- [Large Scale GAN Training for High Fidelity Natural Image Synthesis](https://arxiv.org/abs/1809.11096)
 
 and we are benefit a lot from following projects:
 
-1. https://github.com/bhushan23/BIG-GAN
-2. https://github.com/lmnt-com/wavegrad
-3. https://github.com/rosinality/denoising-diffusion-pytorch
-4. https://github.com/lucidrains/denoising-diffusion-pytorch
+- https://github.com/bhushan23/BIG-GAN
+- https://github.com/lmnt-com/wavegrad
+- https://github.com/rosinality/denoising-diffusion-pytorch
+- https://github.com/lucidrains/denoising-diffusion-pytorch
 
 
 
