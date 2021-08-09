@@ -25,6 +25,7 @@ There are some implement details with paper description, which maybe different w
 
 #### Unconditional generation
 
+- [ ] 128×128 face generation on FFHQ
 - [ ] 1024×1024 face generation by a cascade of 3 models
 
 #### Training Step
@@ -67,7 +68,7 @@ python prepare.py  --path [dataset root]  --out [output root] --size 16,128 -l
 
 #### Pretrain Model
 
-This paper is based on "Denoising Diffusion Probabilistic Models", and we build both `DDPM/SR3` network structure due to the lack of network details, which use timesteps/gama as model embedding input, respectively.  You can use  different json files to train different models, and they have similar performance according to our experiments.
+This paper is based on "Denoising Diffusion Probabilistic Models", and we build both `DDPM/SR3` network structure due to the lack of network details, which use timesteps/gama as model embedding input, respectively.  You can use  json files with their own suffix names to train different models, and they have similar performance according to our experiments.
 
 | Tasks                             | Google Drive                                                 | Aliyun Drive                                     |
 | --------------------------------- | ------------------------------------------------------------ | ------------------------------------------------ |
@@ -85,15 +86,16 @@ We have not trained the model until converged for time reason, which means there
 #### Training/Resume Training
 
 ```python
-# Edit basic_sr3.json to adjust network function and hyperparameters
-python run.py -p train -c config/basic_sr3.json
+# Use sr.py and sample.py to train the super resolution task and unconditional generation task, respectively.
+# Edit sr_sr3.json files to adjust network structure and hyperparameters
+python sr.py -p train -c config/sr_sr3.json
 ```
 
 #### Test/Evaluation
 
 ```python
-# Edit basic_sr3.json to add pretrain model path 
-python run.py -p val -c config/basic_sr3.json
+# Edit sr_sr3.json to add pretrain model path 
+python sr.py -p val -c config/sr_sr3.json
 ```
 
 #### Evaluation Alone
