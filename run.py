@@ -1,6 +1,3 @@
-
-from numpy.core.shape_base import hstack
-from numpy.random import sample
 import torch
 import data as Data
 import model as Model
