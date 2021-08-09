@@ -62,6 +62,15 @@ class DDPM(BaseModel):
                     self.data['SR'], continous)
         self.netG.train()
 
+    def sample(self, batch_size=1, continous=False):
+        self.netG.eval()
+        with torch.no_grad():
+            if isinstance(self.netG, nn.DataParallel):
+                self.SR = self.netG.module.sample(batch_size, continous)
+            else:
+                self.SR = self.netG.sample(batch_size, continous)
+        self.netG.train()
+
     def set_new_noise_schedule(self, schedule_opt, schedule_phase='train'):
         if self.schedule_phase is None or self.schedule_phase != schedule_phase:
             self.schedule_phase = schedule_phase
@@ -74,13 +83,16 @@ class DDPM(BaseModel):
     def get_current_log(self):
         return self.log_dict
 
-    def get_current_visuals(self, need_LR=True):
+    def get_current_visuals(self, need_LR=True, sample=False):
         out_dict = OrderedDict()
-        out_dict['SR'] = self.SR.detach().float().cpu()
-        out_dict['INF'] = self.data['SR'].detach().float().cpu()
-        out_dict['HR'] = self.data['HR'].detach().float().cpu()
-        if need_LR:
-            out_dict['LR'] = self.data['LR'].detach().float().cpu()
+        if sample:
+            out_dict['SAM'] = self.SR.detach().float().cpu()
+        else:
+            out_dict['SR'] = self.SR.detach().float().cpu()
+            out_dict['INF'] = self.data['SR'].detach().float().cpu()
+            out_dict['HR'] = self.data['HR'].detach().float().cpu()
+            if need_LR:
+                out_dict['LR'] = self.data['LR'].detach().float().cpu()
         return out_dict
 
     def print_network(self):
