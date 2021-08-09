@@ -44,18 +44,9 @@ We set the maximum reverse steps budget to 2000 now.
 | 1024×1024            |          |          |
 
 - ##### 16×16 -> 128×128 on FFHQ-CelebaHQ 
-<center>
-<figure>
-<img src="./misc/sr_process_16_128_0.png" alt="show" style="zoom:90%;" />
-<img src="./misc/sr_process_16_128_1.png" alt="show" style="zoom:90%;" />
-<img src="./misc/sr_process_16_128_2.png" alt="show" style="zoom:90%;" />
-</figure>
-</center>
 
-
-
-
-
+| <img src="./misc/sr_process_16_128_0.png" alt="show" style="zoom:90%;" /> |  <img src="./misc/sr_process_16_128_1.png" alt="show" style="zoom:90%;" />    |   <img src="./misc/sr_process_16_128_2.png" alt="show" style="zoom:90%;" />   |
+| ------------------------------------------------------------ | ---- | ---- |
 
 ### Usage
 
