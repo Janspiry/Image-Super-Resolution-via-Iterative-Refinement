@@ -16,7 +16,7 @@
         "train": {
             "name": "FFHQ",
             "mode": "HR", // whether need LR img
-            "dataroot": "dataset/ffhq",
+            "dataroot": "dataset/ffhq_64_512",
             "l_resolution": 64, // low resolution need to super_resolution
             "r_resolution": 512, // high resolution
             "batch_size": 4,
@@ -27,7 +27,7 @@
         "val": {
             "name": "CelebaHQ",
             "mode": "LRHR",
-            "dataroot": "dataset/celebahq",
+            "dataroot": "dataset/celebahq_64_512",
             "l_resolution": 64,
             "r_resolution": 512,
             "data_len": 50
