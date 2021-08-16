@@ -1,0 +1,93 @@
+{
+    "name": "sr_ffhq",
+    "phase": "train", // train or val
+    "gpu_ids": [
+        0
+    ],
+    "path": { //set the path
+        "log": "logs",
+        "tb_logger": "tb_logger",
+        "results": "results",
+        "checkpoint": "checkpoint",
+        "resume_state": null
+        // "resume_state": "experiments/basic_sr_ffhq_210806_204158/checkpoint/I640000_E37" //pretrain model or training state
+    },
+    "datasets": {
+        "train": {
+            "name": "FFHQ",
+            "mode": "HR", // whether need LR img
+            "dataroot": "dataset/ffhq",
+            "l_resolution": 64, // low resolution need to super_resolution
+            "r_resolution": 512, // high resolution
+            "batch_size": 4,
+            "num_workers": 8,
+            "use_shuffle": true,
+            "data_len": -1 // -1 represents all data used in train
+        },
+        "val": {
+            "name": "CelebaHQ",
+            "mode": "LRHR",
+            "dataroot": "dataset/celebahq",
+            "l_resolution": 64,
+            "r_resolution": 512,
+            "data_len": 50
+        }
+    },
+    "model": {
+        "which_model_G": "sr3", // use the ddpm or sr3 network structure
+        "finetune_norm": false,
+        "unet": {
+            "in_channel": 6,
+            "out_channel": 3,
+            "inner_channel": 64,
+            "channel_multiplier": [
+                1,
+                2,
+                4,
+                8,
+                8,
+                16,
+                16
+            ],
+            "attn_res": [
+                16
+            ],
+            "res_blocks": 2,
+            "dropout": 0.2
+        },
+        "beta_schedule": { // use munual beta_schedule for acceleration
+            "train": {
+                "schedule": "linear",
+                "n_timestep": 2000,
+                "linear_start": 1e-6,
+                "linear_end": 1e-2
+            },
+            "val": {
+                "schedule": "linear",
+                "n_timestep": 2000,
+                "linear_start": 1e-6,
+                "linear_end": 1e-2
+            }
+        },
+        "diffusion": {
+            "image_size": 128,
+            "channels": 3, //sample channel
+            "conditional": true // unconditional generation or unconditional generation(super_resolution)
+        }
+    },
+    "train": {
+        "n_iter": 1000000,
+        "val_freq": 1e4,
+        "save_checkpoint_freq": 1e4,
+        "print_freq": 200,
+        "optimizer": {
+            "type": "adam",
+            "lr": 1e-4
+        },
+        "ema_scheduler": { // not used now
+            "step_start_ema": 5000,
+            "update_ema_every": 1,
+            "ema_decay": 0.9999
+        }
+    }
+}

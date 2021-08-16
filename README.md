@@ -1,6 +1,6 @@
 ## Image Super-Resolution via Iterative Refinement
 
-[Paper](https://arxiv.org/pdf/2104.07636.pdf )  [Project](https://iterative-refinement.github.io/ )
+[Paper](https://arxiv.org/pdf/2104.07636.pdf ) |  [Project](https://iterative-refinement.github.io/ )
 
 
 
@@ -10,9 +10,9 @@ This is a unoffical implementation about **Image Super-Resolution via Iterative 
 
 There are some implement details with paper description, which maybe different with actual `SR3` structure due to details missing.
 
-- We used the Res-Net block and channel concatenation style in vanilla `DDPM`.
+- We used the ResNet block and channel concatenation style like vanilla `DDPM`.
 - We used the attention mechanism in low resolution feature(16×16) like vanilla `DDPM`.
-- We encoding the gama as `FilM` strcutrue did in `Wave Grad`, and embedding it without affine transformation.
+- We encoding the $\gamma$ as `FilM` strcutrue did in `WaveGrad`, and embedding it without affine transformation.
 
 
 
@@ -25,7 +25,7 @@ There are some implement details with paper description, which maybe different w
 
 #### Unconditional generation
 
-- [ ] 128×128 face generation on FFHQ
+- [x] 128×128 face generation on FFHQ
 - [ ] 1024×1024 face generation by a cascade of 3 models
 
 #### Training Step
@@ -33,7 +33,7 @@ There are some implement details with paper description, which maybe different w
 - [x] log/logger
 - [x] metrics evaluation
 - [x] multi-gpu support
-- [x] resume training/pretrain model
+- [x] resume training/pretrained model
 
 
 
@@ -43,39 +43,61 @@ We set the maximum reverse steps budget to 2000 now.
 
 | Tasks/Metrics        | SSIM(+) | PSNR(+) | FID(-)  | IS(+)   |
 | -------------------- | ----------- | -------- | ---- | ---- |
-| 16×16 -> 128×128 | 0.675       | 23.26    |      |      |
-| 64×64 -> 512×512     |             |          |      |      |
-| 1024×1024            |             |          |      |      |
+| 16×16 -> 128×128 | 0.675       | 23.26    | - | - |
+| 64×64 -> 512×512     |             |          | - | - |
+| 128×128 | - | - | | |
+| 1024×1024 | - | - |      |      |
 
 - ##### 16×16 -> 128×128 on FFHQ-CelebaHQ [[More Results](https://drive.google.com/drive/folders/1Vk1lpHzbDf03nME5fV9a-lWzSh3kMK14?usp=sharing)]
 
 | <img src="./misc/sr_process_16_128_0.png" alt="show" style="zoom:90%;" /> |  <img src="./misc/sr_process_16_128_1.png" alt="show" style="zoom:90%;" />    |   <img src="./misc/sr_process_16_128_2.png" alt="show" style="zoom:90%;" />   |
 | ------------------------------------------------------------ | ---- | ---- |
 
+- ##### 128×128 face generation on FFHQ [[More Results](https://drive.google.com/drive/folders/13AsjRwDw4wMmL0bK7wPd2rP7ds7eyAMh?usp=sharing)]
+
+| <img src="./misc/sample_process_128_0.png" alt="show" style="zoom:90%;" /> |  <img src="./misc/sample_process_128_1.png" alt="show" style="zoom:90%;" />    |   <img src="./misc/sample_process_128_2.png" alt="show" style="zoom:90%;" />   |
+| ------------------------------------------------------------ | ---- | ---- |
+
+
+
 ### Usage
 
 #### Data Prepare
 
-- [FFHQ 128×128](https://github.com/NVlabs/ffhq-dataset)
-- [CelebaHQ 256×256](https://www.kaggle.com/badasstechie/celebahq-resized-256x256)
+- [FFHQ 128×128](https://github.com/NVlabs/ffhq-dataset) | [FFHQ_512×512](https://www.kaggle.com/arnaud58/flickrfaceshq-dataset-ffhq)
+- [CelebaHQ 256×256](https://www.kaggle.com/badasstechie/celebahq-resized-256x256) | [CelebaMask-HQ_1024×1024](https://drive.google.com/file/d/1badu11NqxGf6qM3PTTooQDJvQbejgbTv/view)
 
 ```python
 # Resize to get 16×16 LR_IMGS and 128×128 HR_IMGS, then prepare 128×128 Fake SR_IMGS by bicubic interpolation
 python prepare.py  --path [dataset root]  --out [output root] --size 16,128 -l
 ```
 
+then you need change the dataset config to your save path and image resolution: 
 
+```json
+"datasets": {
+    "train": {
+        "dataroot": "dataset/ffhq", 
+        "l_resolution": 16, // low resolution need to super_resolution
+        "r_resolution": 128, // high resolution
+    },
+    "val": {
+        "dataroot": "dataset/celebahq",
+    }
+},
+```
 
-#### Pretrain Model
+#### Pretrained Model
 
-This paper is based on "Denoising Diffusion Probabilistic Models", and we build both `DDPM/SR3` network structure due to the lack of network details, which use timesteps/gama as model embedding input, respectively.  You can use  json files with their own suffix names to train different models, and they have similar performance according to our experiments.
+This paper is based on "Denoising Diffusion Probabilistic Models", and we build both `DDPM/SR3` network structure, which use timesteps/gama as model embedding input, respectively. In our  experiments, `SR3` model can achieve better visual results with same reverse step and learning rate. You can select the json files with annotated suffix names to train different models.
 
-| Tasks                             | Google Drive                                                 | Aliyun Drive                                     |
-| --------------------------------- | ------------------------------------------------------------ | ------------------------------------------------ |
-| 16×16 -> 128×128 on FFHQ-CelebaHQ | [SR3](https://drive.google.com/drive/folders/12jh0K8XoM1FqpeByXvugHHAF3oAZ8KRu?usp=sharing) | [SR3](https://www.aliyundrive.com/s/EJXxgxqKy9z) |
+| Tasks                             | Google Drive                                                 |
+| --------------------------------- | ------------------------------------------------------------ |
+| 16×16 -> 128×128 on FFHQ-CelebaHQ | [SR3](https://drive.google.com/drive/folders/12jh0K8XoM1FqpeByXvugHHAF3oAZ8KRu?usp=sharing) |
+| 128×128 face generation on FFHQ   | [SR3](https://drive.google.com/drive/folders/1ldukMgLKAxE7qiKdFJlu-qubGlnW-982?usp=sharing) |
 
 ```
-# Download the pretrain model and edit basic_ddpm.json about "resume_state":
+# Download the pretrain model and edit [sr|sample]_[ddpm|sr3]_[resolution option].json about "resume_state":
 "resume_state": [your pretrain model path]
 ```
 
@@ -87,14 +109,14 @@ We have not trained the model until converged for time reason, which means there
 
 ```python
 # Use sr.py and sample.py to train the super resolution task and unconditional generation task, respectively.
-# Edit sr_sr3.json files to adjust network structure and hyperparameters
+# Edit json files to adjust network structure and hyperparameters
 python sr.py -p train -c config/sr_sr3.json
 ```
 
 #### Test/Evaluation
 
 ```python
-# Edit sr_sr3.json to add pretrain model path 
+# Edit json to add pretrain model path and run the evaluation 
 python sr.py -p val -c config/sr_sr3.json
 ```
 
@@ -121,6 +143,7 @@ and we are benefit a lot from following projects:
 - https://github.com/lmnt-com/wavegrad
 - https://github.com/rosinality/denoising-diffusion-pytorch
 - https://github.com/lucidrains/denoising-diffusion-pytorch
+- https://github.com/switchablenorms/CelebAMask-HQ
 
 
 

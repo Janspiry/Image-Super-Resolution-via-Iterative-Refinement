@@ -43,7 +43,6 @@ def parse(args):
 
     # change dataset length limit
     opt['phase'] = phase
-    # opt['datasets'][phase]['data_len'] = -1
 
     # export CUDA_VISIBLE_DEVICES
     if gpu_ids is not None:
@@ -56,6 +55,7 @@ def parse(args):
     else:
         opt['distributed'] = False
 
+    # debug
     if 'debug' in opt['name']:
         opt['train']['val_freq'] = 2
         opt['train']['print_freq'] = 2
@@ -63,6 +63,10 @@ def parse(args):
         opt['datasets']['train']['batch_size'] = 2
         opt['model']['beta_schedule']['n_timestep'] = 2
         opt['datasets']['train']['data_len'] = 6
+        opt['datasets']['val']['data_len'] = 3
+
+    # validation in train phase
+    if phase == 'train':
         opt['datasets']['val']['data_len'] = 3
 
     return opt
