@@ -16,7 +16,7 @@
         "train": {
             "name": "FFHQ",
             "mode": "HR",
-            "dataroot": "dataset/ffhq",
+            "dataroot": "dataset/ffhq_16_128",
             "l_resolution": 16,
             "r_resolution": 128,
             "batch_size": 12,
@@ -27,7 +27,7 @@
         "val": {
             "name": "CelebaHQ",
             "mode": "LRHR",
-            "dataroot": "dataset/celebahq",
+            "dataroot": "dataset/celebahq_16_128",
             "l_resolution": 16,
             "r_resolution": 128,
             "data_len": 3

@@ -77,12 +77,12 @@ then you need to change the dataset config to your save path and image resolutio
 ```json
 "datasets": {
     "train": {
-        "dataroot": "dataset/ffhq", 
+        "dataroot": "dataset/ffhq_16_128", 
         "l_resolution": 16, // low resolution need to super_resolution
         "r_resolution": 128, // high resolution
     },
     "val": {
-        "dataroot": "dataset/celebahq",
+        "dataroot": "dataset/celebahq_16_128",
     }
 },
 ```
