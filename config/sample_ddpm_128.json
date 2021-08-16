@@ -1,5 +1,5 @@
 {
-    "name": "basic_sr_ffhq",
+    "name": "generation_ffhq",
     "phase": "train",
     "gpu_ids": [
         0
@@ -26,18 +26,18 @@
         },
         "val": {
             "name": "CelebaHQ",
-            "mode": "LRHR",
+            "mode": "HR",
             "dataroot": "dataset/celebahq",
             "l_resolution": 16,
             "r_resolution": 128,
-            "data_len": 3
+            "data_len": 10
         }
     },
     "model": {
         "which_model_G": "ddpm", //ddpm, sr3
         "finetune_norm": false,
         "unet": {
-            "in_channel": 6,
+            "in_channel": 3,
             "out_channel": 3,
             "inner_channel": 64,
             "channel_multiplier": [
@@ -71,7 +71,7 @@
         "diffusion": {
             "image_size": 128,
             "channels": 3, //sample channel
-            "conditional": true
+            "conditional": false
         }
     },
     "train": {
