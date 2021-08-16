@@ -64,15 +64,15 @@ We set the maximum reverse steps budget to 2000 now.
 
 #### Data Prepare
 
-- [FFHQ 128×128](https://github.com/NVlabs/ffhq-dataset) | [FFHQ_512×512](https://www.kaggle.com/arnaud58/flickrfaceshq-dataset-ffhq)
-- [CelebaHQ 256×256](https://www.kaggle.com/badasstechie/celebahq-resized-256x256) | [CelebaMask-HQ_1024×1024](https://drive.google.com/file/d/1badu11NqxGf6qM3PTTooQDJvQbejgbTv/view)
+- [FFHQ 128×128](https://github.com/NVlabs/ffhq-dataset) | [FFHQ 512×512](https://www.kaggle.com/arnaud58/flickrfaceshq-dataset-ffhq)
+- [CelebaHQ 256×256](https://www.kaggle.com/badasstechie/celebahq-resized-256x256) | [CelebaMask-HQ 1024×1024](https://drive.google.com/file/d/1badu11NqxGf6qM3PTTooQDJvQbejgbTv/view)
 
 ```python
 # Resize to get 16×16 LR_IMGS and 128×128 HR_IMGS, then prepare 128×128 Fake SR_IMGS by bicubic interpolation
 python prepare.py  --path [dataset root]  --out [output root] --size 16,128 -l
 ```
 
-then you need change the dataset config to your save path and image resolution: 
+then you need to change the dataset config to your save path and image resolution: 
 
 ```json
 "datasets": {
@@ -89,7 +89,7 @@ then you need change the dataset config to your save path and image resolution:
 
 #### Pretrained Model
 
-This paper is based on "Denoising Diffusion Probabilistic Models", and we build both `DDPM/SR3` network structure, which use timesteps/gama as model embedding input, respectively. In our  experiments, `SR3` model can achieve better visual results with same reverse step and learning rate. You can select the json files with annotated suffix names to train different models.
+This paper is based on "Denoising Diffusion Probabilistic Models", and we build both `DDPM/SR3` network structure, which use timesteps/gama as model embedding input, respectively. In our experiments, `SR3` model can achieve better visual results with same reverse step and learning rate. You can select the json files with annotated suffix names to train different models.
 
 | Tasks                             | Google Drive                                                 |
 | --------------------------------- | ------------------------------------------------------------ |
