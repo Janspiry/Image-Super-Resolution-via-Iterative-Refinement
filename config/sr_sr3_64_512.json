@@ -39,7 +39,7 @@
         "unet": {
             "in_channel": 6,
             "out_channel": 3,
-            "inner_channel": 64,
+            "inner_channel": 32,
             "channel_multiplier": [
                 1,
                 2,
@@ -50,10 +50,10 @@
                 16
             ],
             "attn_res": [
-                16
+                // 16
             ],
             "res_blocks": 2,
-            "dropout": 0.2
+            "dropout": 0
         },
         "beta_schedule": { // use munual beta_schedule for acceleration
             "train": {
@@ -70,7 +70,7 @@
             }
         },
         "diffusion": {
-            "image_size": 128,
+            "image_size": 512,
             "channels": 3, //sample channel
             "conditional": true // unconditional generation or unconditional generation(super_resolution)
         }

@@ -61,7 +61,8 @@ def parse(args):
         opt['train']['print_freq'] = 2
         opt['train']['save_checkpoint_freq'] = 3
         opt['datasets']['train']['batch_size'] = 2
-        opt['model']['beta_schedule']['n_timestep'] = 2
+        opt['model']['beta_schedule']['train']['n_timestep'] = 10
+        opt['model']['beta_schedule']['val']['n_timestep'] = 10
         opt['datasets']['train']['data_len'] = 6
         opt['datasets']['val']['data_len'] = 3
 
