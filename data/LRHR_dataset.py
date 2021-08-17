@@ -23,12 +23,13 @@ class LRHRDataset(Dataset):
             transforms.Lambda(lambda t: (t * 2) - 1)
         ])
 
+        # init the datalen
+        if self.data_len <= 0:
+            with self.env.begin(write=False) as txn:
+                self.data_len = int(txn.get("length".encode("utf-8")))
+
     def __len__(self):
-        if self.data_len > 0:
-            return self.data_len
-        with self.env.begin(write=False) as txn:
-            length = txn.get("length".encode("utf-8"))
-        return int(length)
+        return self.data_len
 
     def AugmentWithTransform(self, img_list, hflip=True, rot=False):
         # horizontal flip OR rotate
@@ -51,23 +52,40 @@ class LRHRDataset(Dataset):
         img_HR = None
         img_LR = None
         with self.env.begin(write=False) as txn:
+
+            hr_img_bytes = txn.get(
+                'hr_{}_{}'.format(
+                    self.r_res, str(index).zfill(5)).encode('utf-8')
+            )
+            sr_img_bytes = txn.get(
+                'sr_{}_{}_{}'.format(
+                    self.l_res, self.r_res, str(index).zfill(5)).encode('utf-8')
+            )
             if self.need_LR:
                 lr_img_bytes = txn.get(
                     'lr_{}_{}'.format(
                         self.l_res, str(index).zfill(5)).encode('utf-8')
                 )
-                img_LR = Image.open(BytesIO(lr_img_bytes)).convert("RGB")
-            hr_img_bytes = txn.get(
-                'hr_{}_{}'.format(
-                    self.r_res, str(index).zfill(5)).encode('utf-8')
-            )
+            # skip the invalid index
+            while hr_img_bytes is None or sr_img_bytes is None:
+                index = random.randint(0, self.data_len)
+                hr_img_bytes = txn.get(
+                    'hr_{}_{}'.format(
+                        self.r_res, str(index).zfill(5)).encode('utf-8')
+                )
+                sr_img_bytes = txn.get(
+                    'sr_{}_{}_{}'.format(
+                        self.l_res, self.r_res, str(index).zfill(5)).encode('utf-8')
+                )
+                if self.need_LR:
+                    lr_img_bytes = txn.get(
+                        'lr_{}_{}'.format(
+                            self.l_res, str(index).zfill(5)).encode('utf-8')
+                    )
             img_HR = Image.open(BytesIO(hr_img_bytes)).convert("RGB")
-
-            sr_img_bytes = txn.get(
-                'sr_{}_{}_{}'.format(
-                    self.l_res, self.r_res, str(index).zfill(5)).encode('utf-8')
-            )
             img_SR = Image.open(BytesIO(sr_img_bytes)).convert("RGB")
+            if self.need_LR:
+                img_LR = Image.open(BytesIO(lr_img_bytes)).convert("RGB")
         if self.need_LR:
             [img_LR, img_SR, img_HR] = self.AugmentWithTransform(
                 [img_LR, img_SR, img_HR])
