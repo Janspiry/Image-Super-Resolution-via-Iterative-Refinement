@@ -80,8 +80,9 @@ def prepare(img_path, out_path, n_worker, sizes=(16, 128), resample=Image.BICUBI
                     txn.put('sr_{}_{}_{}'.format(
                         sizes[0], sizes[1], i.zfill(5)).encode('utf-8'), sr_img)
             total += 1
-        with env.begin(write=True) as txn:
-            txn.put('length'.encode('utf-8'), str(total).encode('utf-8'))
+        if lmdb_save:
+            with env.begin(write=True) as txn:
+                txn.put('length'.encode('utf-8'), str(total).encode('utf-8'))
 
 
 if __name__ == '__main__':
