@@ -35,6 +35,7 @@ class DDPM(BaseModel):
                 optim_params, lr=opt['train']["optimizer"]["lr"])
             self.log_dict = OrderedDict()
         self.schedule_phase = None
+        self.set_loss()
         self.set_new_noise_schedule(
             opt['model']['beta_schedule'][opt['phase']], schedule_phase=opt['phase'])
         self.load_network()
@@ -45,6 +46,9 @@ class DDPM(BaseModel):
     def optimize_parameters(self):
         self.optG.zero_grad()
         l_pix = self.netG(self.data)
+        # need to average in multi-gpu
+        b, c, h, w = self.data['HR'].shape
+        l_pix = l_pix.sum()/int(b*c*h*w)
         l_pix.backward()
         self.optG.step()
 
@@ -70,6 +74,12 @@ class DDPM(BaseModel):
             else:
                 self.SR = self.netG.sample(batch_size, continous)
         self.netG.train()
+
+    def set_loss(self):
+        if isinstance(self.netG, nn.DataParallel):
+            self.netG.module.set_loss(self.device)
+        else:
+            self.netG.set_loss(self.device)
 
     def set_new_noise_schedule(self, schedule_opt, schedule_phase='train'):
         if self.schedule_phase is None or self.schedule_phase != schedule_phase:
