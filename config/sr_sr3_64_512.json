@@ -17,6 +17,7 @@
             "name": "FFHQ",
             "mode": "HR", // whether need LR img
             "dataroot": "dataset/ffhq_64_512",
+            "datatype": "lmdb", //lmdb or img, path of img files
             "l_resolution": 64, // low resolution need to super_resolution
             "r_resolution": 512, // high resolution
             "batch_size": 4,
@@ -28,6 +29,7 @@
             "name": "CelebaHQ",
             "mode": "LRHR",
             "dataroot": "dataset/celebahq_64_512",
+            "datatype": "lmdb", //lmdb or img, path of img files
             "l_resolution": 64,
             "r_resolution": 512,
             "data_len": 50

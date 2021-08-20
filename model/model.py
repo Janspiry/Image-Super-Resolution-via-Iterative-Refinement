@@ -14,7 +14,13 @@ class DDPM(BaseModel):
         super(DDPM, self).__init__(opt)
         # define network and load pretrained models
         self.netG = self.set_device(networks.define_G(opt))
-        self.print_network()
+        self.schedule_phase = None
+
+        # set loss and load resume state
+        self.set_loss()
+        self.set_new_noise_schedule(
+            opt['model']['beta_schedule']['train'], schedule_phase='train')
+        self.load_network()
         if self.opt['phase'] == 'train':
             self.netG.train()
             # find the parameters to optimize
@@ -34,11 +40,7 @@ class DDPM(BaseModel):
             self.optG = torch.optim.Adam(
                 optim_params, lr=opt['train']["optimizer"]["lr"])
             self.log_dict = OrderedDict()
-        self.schedule_phase = None
-        self.set_loss()
-        self.set_new_noise_schedule(
-            opt['model']['beta_schedule'][opt['phase']], schedule_phase=opt['phase'])
-        self.load_network()
+        self.print_network()
 
     def feed_data(self, data):
         self.data = self.set_device(data)
