@@ -19,9 +19,12 @@ class LRHRDataset(Dataset):
             self.env = lmdb.open(dataroot, readonly=True, lock=False,
                                  readahead=False, meminit=False)
             # init the datalen
+            with self.env.begin(write=False) as txn:
+                self.dataset_len = int(txn.get("length".encode("utf-8")))
             if self.data_len <= 0:
-                with self.env.begin(write=False) as txn:
-                    self.data_len = int(txn.get("length".encode("utf-8")))
+                self.data_len = self.dataset_len
+            else:
+                self.data_len = min(self.data_len, self.dataset_len)
         elif datatype == 'img':
             self.sr_path = Util.get_paths_from_images(
                 '{}/sr_{}_{}'.format(dataroot, l_resolution, r_resolution))
@@ -30,8 +33,11 @@ class LRHRDataset(Dataset):
             if self.need_LR:
                 self.lr_path = Util.get_paths_from_images(
                     '{}/lr_{}'.format(dataroot, l_resolution))
+            self.dataset_len = len(self.hr_path)
             if self.data_len <= 0:
-                self.data_len = len(self.hr_path)
+                self.data_len = self.dataset_len
+            else:
+                self.data_len = min(self.data_len, self.dataset_len)
         else:
             raise NotImplementedError(
                 'data_type [{:s}] is not recognized.'.format(datatype))
