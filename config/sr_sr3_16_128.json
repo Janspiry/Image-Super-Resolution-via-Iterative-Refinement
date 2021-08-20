@@ -32,7 +32,7 @@
             "datatype": "lmdb", //lmdb or img, path of img files
             "l_resolution": 16,
             "r_resolution": 128,
-            "data_len": 50, // data length in validation 
+            "data_len": 50 // data length in validation 
         }
     },
     "model": {
