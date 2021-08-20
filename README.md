@@ -1,10 +1,10 @@
-## Image Super-Resolution via Iterative Refinement
+# Image Super-Resolution via Iterative Refinement
 
 [Paper](https://arxiv.org/pdf/2104.07636.pdf ) |  [Project](https://iterative-refinement.github.io/ )
 
 
 
-### Brief
+## Brief
 
 This is a unoffical implementation about **Image Super-Resolution via Iterative Refinement(SR3)** by **Pytorch**.
 
@@ -16,28 +16,28 @@ There are some implement details with paper description, which maybe different w
 
 
 
-### Status
+## Status
 
-#### Conditional generation(super resolution)
+### Conditional generation(super resolution)
 
 - [x] 16×16 -> 128×128 on FFHQ-CelebaHQ
 - [ ] 64×64 -> 512×512 on FFHQ-CelebaHQ
 
-#### Unconditional generation
+### Unconditional generation
 
 - [x] 128×128 face generation on FFHQ
 - [ ] 1024×1024 face generation by a cascade of 3 models
 
-#### Training Step
+### Training Step
 
-- [x] log/logger
+- [x] log / logger
 - [x] metrics evaluation
 - [x] multi-gpu support
-- [x] resume training/pretrained model
+- [x] resume training / pretrained model
 
 
 
-### Results
+## Results
 
 We set the maximum reverse steps budget to 2000 now.
 
@@ -48,64 +48,95 @@ We set the maximum reverse steps budget to 2000 now.
 | 128×128 | - | - | | |
 | 1024×1024 | - | - |      |      |
 
-- ##### 16×16 -> 128×128 on FFHQ-CelebaHQ [[More Results](https://drive.google.com/drive/folders/1Vk1lpHzbDf03nME5fV9a-lWzSh3kMK14?usp=sharing)]
+- #### 16×16 -> 128×128 on FFHQ-CelebaHQ [[More Results](https://drive.google.com/drive/folders/1Vk1lpHzbDf03nME5fV9a-lWzSh3kMK14?usp=sharing)]
 
 | <img src="./misc/sr_process_16_128_0.png" alt="show" style="zoom:90%;" /> |  <img src="./misc/sr_process_16_128_1.png" alt="show" style="zoom:90%;" />    |   <img src="./misc/sr_process_16_128_2.png" alt="show" style="zoom:90%;" />   |
 | ------------------------------------------------------------ | ---- | ---- |
 
-- ##### 128×128 face generation on FFHQ [[More Results](https://drive.google.com/drive/folders/13AsjRwDw4wMmL0bK7wPd2rP7ds7eyAMh?usp=sharing)]
+- #### 128×128 face generation on FFHQ [[More Results](https://drive.google.com/drive/folders/13AsjRwDw4wMmL0bK7wPd2rP7ds7eyAMh?usp=sharing)]
 
 | <img src="./misc/sample_process_128_0.png" alt="show" style="zoom:90%;" /> |  <img src="./misc/sample_process_128_1.png" alt="show" style="zoom:90%;" />    |   <img src="./misc/sample_process_128_2.png" alt="show" style="zoom:90%;" />   |
 | ------------------------------------------------------------ | ---- | ---- |
 
 
 
-### Usage
+## Usage
 
-#### Data Prepare
+### Pretrained Model
 
-- [FFHQ 128×128](https://github.com/NVlabs/ffhq-dataset) | [FFHQ 512×512](https://www.kaggle.com/arnaud58/flickrfaceshq-dataset-ffhq)
-- [CelebaHQ 256×256](https://www.kaggle.com/badasstechie/celebahq-resized-256x256) | [CelebaMask-HQ 1024×1024](https://drive.google.com/file/d/1badu11NqxGf6qM3PTTooQDJvQbejgbTv/view)
-
-```python
-# Resize to get 16×16 LR_IMGS and 128×128 HR_IMGS, then prepare 128×128 Fake SR_IMGS by bicubic interpolation
-python prepare.py  --path [dataset root]  --out [output root] --size 16,128 -l
-```
-
-then you need to change the dataset config to your save path and image resolution: 
-
-```json
-"datasets": {
-    "train": {
-        "dataroot": "dataset/ffhq_16_128", 
-        "l_resolution": 16, // low resolution need to super_resolution
-        "r_resolution": 128, // high resolution
-    },
-    "val": {
-        "dataroot": "dataset/celebahq_16_128",
-    }
-},
-```
-
-#### Pretrained Model
-
-This paper is based on "Denoising Diffusion Probabilistic Models", and we build both `DDPM/SR3` network structure, which use timesteps/gama as model embedding input, respectively. In our experiments, `SR3` model can achieve better visual results with same reverse step and learning rate. You can select the json files with annotated suffix names to train different models.
+This paper is based on "Denoising Diffusion Probabilistic Models", and we build both `DDPM/SR3` network structure, which use timesteps/gama as model embedding input, respectively. In our experiments, `SR3` model can achieve better visual results with same reverse steps and learning rate. You can select the json files with annotated suffix names to train different model.
 
 | Tasks                             | Google Drive                                                 |
 | --------------------------------- | ------------------------------------------------------------ |
 | 16×16 -> 128×128 on FFHQ-CelebaHQ | [SR3](https://drive.google.com/drive/folders/12jh0K8XoM1FqpeByXvugHHAF3oAZ8KRu?usp=sharing) |
 | 128×128 face generation on FFHQ   | [SR3](https://drive.google.com/drive/folders/1ldukMgLKAxE7qiKdFJlu-qubGlnW-982?usp=sharing) |
 
-```
+```python
 # Download the pretrain model and edit [sr|sample]_[ddpm|sr3]_[resolution option].json about "resume_state":
 "resume_state": [your pretrain model path]
 ```
 
 We have not trained the model until converged for time reason, which means there are a lot room to optimization.
 
+### Data Prepare
 
+#### New Start
 
-#### Training/Resume Training
+If you didn't have the data, you can prepare it by following steps:
+
+- [FFHQ 128×128](https://github.com/NVlabs/ffhq-dataset) | [FFHQ 512×512](https://www.kaggle.com/arnaud58/flickrfaceshq-dataset-ffhq)
+- [CelebaHQ 256×256](https://www.kaggle.com/badasstechie/celebahq-resized-256x256) | [CelebaMask-HQ 1024×1024](https://drive.google.com/file/d/1badu11NqxGf6qM3PTTooQDJvQbejgbTv/view)
+
+Download the dataset and prepare it in **LMDB** or **PNG** format using script.
+
+```python
+# Resize to get 16×16 LR_IMGS and 128×128 HR_IMGS, then prepare 128×128 Fake SR_IMGS by bicubic interpolation
+python prepare.py  --path [dataset root]  --out [output root] --size 16,128 -l
+```
+
+then you need to change the datasets config to your data path and image resolution: 
+
+```json
+"datasets": {
+    "train": {
+        "dataroot": "dataset/ffhq_16_128", // [output root] in prepare.py script
+        "l_resolution": 16, // low resolution need to super_resolution
+        "r_resolution": 128, // high resolution
+        "datatype": "lmdb", //lmdb or img, path of img files
+    },
+    "val": {
+        "dataroot": "dataset/celebahq_16_128", // [output root] in prepare.py script
+    }
+},
+```
+
+#### Own Data
+
+You also can use your image data by following steps.
+
+At first, you should organize images layout like this:
+
+```shell
+# set the high/low resolution images, bicubic interpolation images path
+dataset/celebahq_16_128/
+├── hr_128
+├── lr_16
+└── sr_16_128
+```
+
+then you need to change the dataset config to your data path and image resolution: 
+```json
+"datasets": {
+    "train|val": {
+        "dataroot": "dataset/celebahq_16_128",
+        "l_resolution": 16, // low resolution need to super_resolution
+        "r_resolution": 128, // high resolution
+        "datatype": "img", //lmdb or img, path of img files
+    }
+},
+```
+
+### Training/Resume Training
 
 ```python
 # Use sr.py and sample.py to train the super resolution task and unconditional generation task, respectively.
@@ -113,14 +144,14 @@ We have not trained the model until converged for time reason, which means there
 python sr.py -p train -c config/sr_sr3.json
 ```
 
-#### Test/Evaluation
+### Test/Evaluation
 
 ```python
 # Edit json to add pretrain model path and run the evaluation 
 python sr.py -p val -c config/sr_sr3.json
 ```
 
-#### Evaluation Alone
+### Evaluation Alone
 ```python
 # Quantitative evaluation using SSIM/PSNR metrics on given dataset root
 python eval.py -p [dataset root]
@@ -128,7 +159,7 @@ python eval.py -p [dataset root]
 
 
 
-### Acknowledge
+## Acknowledge
 
 Our work is based on the following theoretical works:
 
@@ -143,7 +174,7 @@ and we are benefit a lot from following projects:
 - https://github.com/lmnt-com/wavegrad
 - https://github.com/rosinality/denoising-diffusion-pytorch
 - https://github.com/lucidrains/denoising-diffusion-pytorch
-- https://github.com/switchablenorms/CelebAMask-HQ
+- https://github.com/hejingwenhejingwen/AdaFM
 
 
 
