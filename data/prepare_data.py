@@ -48,8 +48,8 @@ def resize_worker(img_file, sizes, resample, lmdb_save=False):
 def prepare(img_path, out_path, n_worker, sizes=(16, 128), resample=Image.BICUBIC, lmdb_save=False):
     resize_fn = partial(resize_worker, sizes=sizes,
                         resample=resample, lmdb_save=lmdb_save)
-
-    files = [p for p in Path(f'{img_path}').glob(f'**/*')]
+    files = [p for p in Path(
+        '{}'.format(img_path)).glob(f'**/*')]
 
     if not lmdb_save:
         os.makedirs(out_path, exist_ok=True)
@@ -88,15 +88,15 @@ def prepare(img_path, out_path, n_worker, sizes=(16, 128), resample=Image.BICUBI
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--path', '-p', type=str,
-                        default='Dataset/celebahq_256')
+                        default='{}/Dataset/celebahq_256'.format(Path.home()))
     parser.add_argument('--out', '-o', type=str,
-                        default='./dataset/celebahq_16_128')
+                        default='./dataset/celebahq')
 
     parser.add_argument('--size', type=str, default='16,128')
     parser.add_argument('--n_worker', type=int, default=8)
     parser.add_argument('--resample', type=str, default='bicubic')
-    # default save in lmdb format
-    parser.add_argument('--lmdb', '-l', action='store_false')
+    # default save in png format
+    parser.add_argument('--lmdb', '-l', action='store_true')
 
     args = parser.parse_args()
 
@@ -104,5 +104,6 @@ if __name__ == '__main__':
     resample = resample_map[args.resample]
     sizes = [int(s.strip()) for s in args.size.split(',')]
 
+    args.out = '{}_{}_{}'.format(args.out, sizes[0], sizes[1])
     prepare(args.path, args.out, args.n_worker,
             sizes=sizes, resample=resample, lmdb_save=args.lmdb)

@@ -9,14 +9,15 @@
         "tb_logger": "tb_logger",
         "results": "results",
         "checkpoint": "checkpoint",
-        // "resume_state": null
-        "resume_state": "experiments/generation_ffhq_210811_140902/checkpoint/I1560000_E91" //pretrain model or training state
+        "resume_state": null
+        // "resume_state": "experiments/generation_ffhq_210811_140902/checkpoint/I1560000_E91" //pretrain model or training state
     },
     "datasets": {
         "train": {
             "name": "FFHQ",
             "mode": "HR", // whether need LR img
             "dataroot": "dataset/ffhq_16_128",
+            "datatype": "lmdb", //lmdb or img, path of img files
             "l_resolution": 16, // low resolution need to super_resolution
             "r_resolution": 128, // high resolution
             "batch_size": 4,
@@ -28,6 +29,7 @@
             "name": "CelebaHQ",
             "mode": "HR",
             "dataroot": "dataset/celebahq_16_128",
+            "datatype": "lmdb", //lmdb or img, path of img files
             "l_resolution": 16,
             "r_resolution": 128,
             "data_len": 50
