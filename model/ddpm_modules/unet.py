@@ -215,7 +215,7 @@ class UNet(nn.Module):
 
         self.ups = nn.ModuleList(ups)
 
-        self.final_conv = Block(pre_channel, default(out_channel, in_channel), norm_groups=norm_groups)
+        self.final_conv = Block(pre_channel, default(out_channel, in_channel), groups=norm_groups)
 
     def forward(self, x, time):
         t = self.time_mlp(time) if exists(self.time_mlp) else None
