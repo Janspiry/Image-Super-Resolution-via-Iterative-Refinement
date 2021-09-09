@@ -41,7 +41,7 @@ There are some implement details with paper description, which maybe different w
 
 We set the maximum reverse steps budget to 2000 now.
 
-*Note:* Limited to model parameters in `Nvidia 1080Ti`, image noise occasionally appears in high-resolution images, resulting in low scores.
+*Note:* Limited to model parameters in `Nvidia 1080Ti`, image noise and hue deviation occasionally appears in high-resolution images, resulting in low scores.
 
 | Tasks/Metrics        | SSIM(+) | PSNR(+) | FID(-)  | IS(+)   |
 | -------------------- | ----------- | -------- | ---- | ---- |
