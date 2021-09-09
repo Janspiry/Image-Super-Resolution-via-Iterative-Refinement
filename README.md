@@ -21,12 +21,12 @@ There are some implement details with paper description, which maybe different w
 ### Conditional generation(super resolution)
 
 - [x] 16×16 -> 128×128 on FFHQ-CelebaHQ
-- [ ] 64×64 -> 512×512 on FFHQ-CelebaHQ
+- [x] 64×64 -> 512×512 on FFHQ-CelebaHQ
 
 ### Unconditional generation
 
 - [x] 128×128 face generation on FFHQ
-- [ ] 1024×1024 face generation by a cascade of 3 models
+- [ ] ~~1024×1024 face generation by a cascade of 3 models~~
 
 ### Training Step
 
@@ -41,10 +41,12 @@ There are some implement details with paper description, which maybe different w
 
 We set the maximum reverse steps budget to 2000 now.
 
+*Note:* Limited to model parameters in `Nvidia 1080Ti`, image noise occasionally appears in high-resolution images, resulting in low scores.
+
 | Tasks/Metrics        | SSIM(+) | PSNR(+) | FID(-)  | IS(+)   |
 | -------------------- | ----------- | -------- | ---- | ---- |
 | 16×16 -> 128×128 | 0.675       | 23.26    | - | - |
-| 64×64 -> 512×512     |             |          | - | - |
+| 64×64 -> 512×512     | 0.445 | 19.87 | - | - |
 | 128×128 | - | - | | |
 | 1024×1024 | - | - |      |      |
 
@@ -53,10 +55,18 @@ We set the maximum reverse steps budget to 2000 now.
 | <img src="./misc/sr_process_16_128_0.png" alt="show" style="zoom:90%;" /> |  <img src="./misc/sr_process_16_128_1.png" alt="show" style="zoom:90%;" />    |   <img src="./misc/sr_process_16_128_2.png" alt="show" style="zoom:90%;" />   |
 | ------------------------------------------------------------ | ---- | ---- |
 
+- #### 64×64 -> 512×512 on FFHQ-CelebaHQ [[More Results](https://drive.google.com/drive/folders/1yp_4xChPSZUeVIgxbZM-e3ZSsSgnaR9Z?usp=sharing)]
+
+| <img src="./misc/sr_64_512_0_inf.png" alt="show" style="zoom:90%;" /> | <img src="./misc/sr_64_512_0_sr.png" alt="show" style="zoom:90%;" /> /> | <img src="./misc/sr_64_512_0_hr.png" alt="show" style="zoom:90%;" /> /> |
+| ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| <img src="./misc/sr_64_512_1_sr.png" alt="show" style="zoom:90%;" /> | <img src="./misc/sr_64_512_2_sr.png" alt="show" style="zoom:90%;" /> | <img src="./misc/sr_64_512_3_sr.png" alt="show" style="zoom:90%;" /> |
+
 - #### 128×128 face generation on FFHQ [[More Results](https://drive.google.com/drive/folders/13AsjRwDw4wMmL0bK7wPd2rP7ds7eyAMh?usp=sharing)]
 
 | <img src="./misc/sample_process_128_0.png" alt="show" style="zoom:90%;" /> |  <img src="./misc/sample_process_128_1.png" alt="show" style="zoom:90%;" />    |   <img src="./misc/sample_process_128_2.png" alt="show" style="zoom:90%;" />   |
 | ------------------------------------------------------------ | ---- | ---- |
+
+
 
 
 
@@ -69,6 +79,7 @@ This paper is based on "Denoising Diffusion Probabilistic Models", and we build 
 | Tasks                             | Google Drive                                                 |
 | --------------------------------- | ------------------------------------------------------------ |
 | 16×16 -> 128×128 on FFHQ-CelebaHQ | [SR3](https://drive.google.com/drive/folders/12jh0K8XoM1FqpeByXvugHHAF3oAZ8KRu?usp=sharing) |
+| 64×64 -> 512×512 on FFHQ-CelebaHQ | [SR3](https://drive.google.com/drive/folders/1mCiWhFqHyjt5zE4IdA41fjFwCYdqDzSF?usp=sharing) |
 | 128×128 face generation on FFHQ   | [SR3](https://drive.google.com/drive/folders/1ldukMgLKAxE7qiKdFJlu-qubGlnW-982?usp=sharing) |
 
 ```python
@@ -76,7 +87,7 @@ This paper is based on "Denoising Diffusion Probabilistic Models", and we build 
 "resume_state": [your pretrain model path]
 ```
 
-We have not trained the model until converged for time reason, which means there are a lot room to optimization.
+We have not trained the model until converged for time reason, and reduced model parameters in order to run on a single GPU,  which means there are a lot room to optimization.
 
 ### Data Prepare
 
