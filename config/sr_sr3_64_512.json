@@ -1,26 +1,26 @@
 {
-    "name": "sr_ffhq",
+    "name": "distributed_high_sr_ffhq",
     "phase": "train", // train or val
     "gpu_ids": [
-        0
+        0,1
     ],
     "path": { //set the path
         "log": "logs",
         "tb_logger": "tb_logger",
         "results": "results",
         "checkpoint": "checkpoint",
-        "resume_state": null
-        // "resume_state": "experiments/basic_sr_ffhq_210806_204158/checkpoint/I640000_E37" //pretrain model or training state
+        // "resume_state": null
+        "resume_state": "experiments/distributed_high_sr_ffhq_210901_121212/checkpoint/I830000_E32" //pretrain model or training state
     },
     "datasets": {
         "train": {
             "name": "FFHQ",
             "mode": "HR", // whether need LR img
             "dataroot": "dataset/ffhq_64_512",
-            "datatype": "lmdb", //lmdb or img, path of img files
+            "datatype": "img", //lmdb or img, path of img files
             "l_resolution": 64, // low resolution need to super_resolution
             "r_resolution": 512, // high resolution
-            "batch_size": 4,
+            "batch_size": 2,
             "num_workers": 8,
             "use_shuffle": true,
             "data_len": -1 // -1 represents all data used in train
@@ -29,7 +29,7 @@
             "name": "CelebaHQ",
             "mode": "LRHR",
             "dataroot": "dataset/celebahq_64_512",
-            "datatype": "lmdb", //lmdb or img, path of img files
+            "datatype": "img", //lmdb or img, path of img files
             "l_resolution": 64,
             "r_resolution": 512,
             "data_len": 50
@@ -41,20 +41,21 @@
         "unet": {
             "in_channel": 6,
             "out_channel": 3,
-            "inner_channel": 32,
+            "inner_channel": 64,
+            "norm_groups": 16,
             "channel_multiplier": [
                 1,
                 2,
                 4,
                 8,
-                8,
-                16,
+                // 8,
+                // 16,
                 16
             ],
             "attn_res": [
                 // 16
             ],
-            "res_blocks": 2,
+            "res_blocks": 1,
             "dropout": 0
         },
         "beta_schedule": { // use munual beta_schedule for acceleration
@@ -81,10 +82,10 @@
         "n_iter": 1000000,
         "val_freq": 1e4,
         "save_checkpoint_freq": 1e4,
-        "print_freq": 200,
+        "print_freq": 50,
         "optimizer": {
             "type": "adam",
-            "lr": 1e-4
+            "lr": 3e-6
         },
         "ema_scheduler": { // not used now
             "step_start_ema": 5000,

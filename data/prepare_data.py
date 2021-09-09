@@ -61,8 +61,32 @@ def prepare(img_path, out_path, n_worker, sizes=(16, 128), resample=Image.BICUBI
         env = lmdb.open(out_path, map_size=1024 ** 4, readahead=False)
 
     total = 0
-    with multiprocessing.Pool(n_worker) as pool:
-        for i, imgs in tqdm(pool.imap_unordered(resize_fn, files)):
+    if n_worker>1:
+        with multiprocessing.Pool(n_worker) as pool:
+            for i, imgs in tqdm(pool.imap_unordered(resize_fn, files)):
+                lr_img, hr_img, sr_img = imgs
+                if not lmdb_save:
+                    lr_img.save(
+                        '{}/lr_{}/{}.png'.format(out_path, sizes[0], i.zfill(5)))
+                    hr_img.save(
+                        '{}/hr_{}/{}.png'.format(out_path, sizes[1], i.zfill(5)))
+                    sr_img.save(
+                        '{}/sr_{}_{}/{}.png'.format(out_path, sizes[0], sizes[1], i.zfill(5)))
+                else:
+                    with env.begin(write=True) as txn:
+                        txn.put('lr_{}_{}'.format(
+                            sizes[0], i.zfill(5)).encode('utf-8'), lr_img)
+                        txn.put('hr_{}_{}'.format(
+                            sizes[1], i.zfill(5)).encode('utf-8'), hr_img)
+                        txn.put('sr_{}_{}_{}'.format(
+                            sizes[0], sizes[1], i.zfill(5)).encode('utf-8'), sr_img)
+                total += 1
+            if lmdb_save:
+                with env.begin(write=True) as txn:
+                    txn.put('length'.encode('utf-8'), str(total).encode('utf-8'))
+    else:
+        for file in tqdm(files):
+            i, imgs = resize_fn(file)
             lr_img, hr_img, sr_img = imgs
             if not lmdb_save:
                 lr_img.save(
@@ -80,10 +104,9 @@ def prepare(img_path, out_path, n_worker, sizes=(16, 128), resample=Image.BICUBI
                     txn.put('sr_{}_{}_{}'.format(
                         sizes[0], sizes[1], i.zfill(5)).encode('utf-8'), sr_img)
             total += 1
-        if lmdb_save:
-            with env.begin(write=True) as txn:
-                txn.put('length'.encode('utf-8'), str(total).encode('utf-8'))
-
+            if lmdb_save:
+                with env.begin(write=True) as txn:
+                    txn.put('length'.encode('utf-8'), str(total).encode('utf-8'))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -93,7 +116,7 @@ if __name__ == '__main__':
                         default='./dataset/celebahq')
 
     parser.add_argument('--size', type=str, default='16,128')
-    parser.add_argument('--n_worker', type=int, default=8)
+    parser.add_argument('--n_worker', type=int, default=1)
     parser.add_argument('--resample', type=str, default='bicubic')
     # default save in png format
     parser.add_argument('--lmdb', '-l', action='store_true')

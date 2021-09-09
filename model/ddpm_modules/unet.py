@@ -76,15 +76,15 @@ class Block(nn.Module):
 
 
 class ResnetBlock(nn.Module):
-    def __init__(self, dim, dim_out, time_emb_dim=None, dropout=0):
+    def __init__(self, dim, dim_out, time_emb_dim=None, dropout=0, norm_groups=32):
         super().__init__()
         self.mlp = nn.Sequential(
             Swish(),
             nn.Linear(time_emb_dim, dim_out)
         ) if exists(time_emb_dim) else None
 
-        self.block1 = Block(dim, dim_out)
-        self.block2 = Block(dim_out, dim_out, dropout=dropout)
+        self.block1 = Block(dim, dim_out, groups=norm_groups)
+        self.block2 = Block(dim_out, dim_out, groups=norm_groups, dropout=dropout)
         self.res_conv = nn.Conv2d(
             dim, dim_out, 1) if dim != dim_out else nn.Identity()
 
@@ -97,12 +97,12 @@ class ResnetBlock(nn.Module):
 
 
 class SelfAttention(nn.Module):
-    def __init__(self, in_channel, n_head=1):
+    def __init__(self, in_channel, n_head=1, norm_groups=32):
         super().__init__()
 
         self.n_head = n_head
 
-        self.norm = nn.GroupNorm(32, in_channel)
+        self.norm = nn.GroupNorm(norm_groups, in_channel)
         self.qkv = nn.Conv2d(in_channel, in_channel * 3, 1, bias=False)
         self.out = nn.Conv2d(in_channel, in_channel, 1)
 
@@ -129,13 +129,13 @@ class SelfAttention(nn.Module):
 
 
 class ResnetBlocWithAttn(nn.Module):
-    def __init__(self, dim, dim_out, *, time_emb_dim=None, dropout=0, with_attn=False):
+    def __init__(self, dim, dim_out, *, time_emb_dim=None, norm_groups=32, dropout=0, with_attn=False):
         super().__init__()
         self.with_attn = with_attn
         self.res_block = ResnetBlock(
-            dim, dim_out, time_emb_dim, dropout=dropout)
+            dim, dim_out, time_emb_dim, norm_groups=norm_groups, dropout=dropout)
         if with_attn:
-            self.attn = SelfAttention(dim_out)
+            self.attn = SelfAttention(dim_out, norm_groups=norm_groups)
 
     def forward(self, x, time_emb):
         x = self.res_block(x, time_emb)
@@ -150,6 +150,7 @@ class UNet(nn.Module):
         in_channel=6,
         out_channel=3,
         inner_channel=32,
+        norm_groups=32,
         channel_mults=(1, 2, 4, 8, 8),
         attn_res=(8),
         res_blocks=3,
@@ -183,7 +184,7 @@ class UNet(nn.Module):
             channel_mult = inner_channel * channel_mults[ind]
             for _ in range(0, res_blocks):
                 downs.append(ResnetBlocWithAttn(
-                    pre_channel, channel_mult, time_emb_dim=time_dim, dropout=dropout, with_attn=use_attn))
+                    pre_channel, channel_mult, time_emb_dim=time_dim, norm_groups=norm_groups, dropout=dropout, with_attn=use_attn))
                 feat_channels.append(channel_mult)
                 pre_channel = channel_mult
             if not is_last:
@@ -193,10 +194,10 @@ class UNet(nn.Module):
         self.downs = nn.ModuleList(downs)
 
         self.mid = nn.ModuleList([
-            ResnetBlocWithAttn(pre_channel, pre_channel, time_emb_dim=time_dim,
+            ResnetBlocWithAttn(pre_channel, pre_channel, time_emb_dim=time_dim, norm_groups=norm_groups,
                                dropout=dropout, with_attn=True),
-            ResnetBlocWithAttn(pre_channel, pre_channel,
-                               time_emb_dim=time_dim, dropout=dropout, with_attn=False)
+            ResnetBlocWithAttn(pre_channel, pre_channel, time_emb_dim=time_dim, norm_groups=norm_groups, 
+                                dropout=dropout, with_attn=False)
         ])
 
         ups = []
@@ -206,7 +207,7 @@ class UNet(nn.Module):
             channel_mult = inner_channel * channel_mults[ind]
             for _ in range(0, res_blocks+1):
                 ups.append(ResnetBlocWithAttn(
-                    pre_channel+feat_channels.pop(), channel_mult, time_emb_dim=time_dim, dropout=dropout, with_attn=use_attn))
+                    pre_channel+feat_channels.pop(), channel_mult, time_emb_dim=time_dim, dropout=dropout, norm_groups=norm_groups, with_attn=use_attn))
                 pre_channel = channel_mult
             if not is_last:
                 ups.append(Upsample(pre_channel))
@@ -214,7 +215,7 @@ class UNet(nn.Module):
 
         self.ups = nn.ModuleList(ups)
 
-        self.final_conv = Block(pre_channel, default(out_channel, in_channel))
+        self.final_conv = Block(pre_channel, default(out_channel, in_channel), norm_groups=norm_groups)
 
     def forward(self, x, time):
         t = self.time_mlp(time) if exists(self.time_mlp) else None
