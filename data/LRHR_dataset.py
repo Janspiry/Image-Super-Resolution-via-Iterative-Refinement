@@ -65,20 +65,20 @@ class LRHRDataset(Dataset):
                             self.l_res, str(index).zfill(5)).encode('utf-8')
                     )
                 # skip the invalid index
-                while hr_img_bytes is None or sr_img_bytes is None:
-                    index = random.randint(0, self.data_len-1)
+                while (hr_img_bytes is None) or (sr_img_bytes is None):
+                    new_index = random.randint(0, self.data_len-1)
                     hr_img_bytes = txn.get(
                         'hr_{}_{}'.format(
-                            self.r_res, str(index).zfill(5)).encode('utf-8')
+                            self.r_res, str(new_index).zfill(5)).encode('utf-8')
                     )
                     sr_img_bytes = txn.get(
                         'sr_{}_{}_{}'.format(
-                            self.l_res, self.r_res, str(index).zfill(5)).encode('utf-8')
+                            self.l_res, self.r_res, str(new_index).zfill(5)).encode('utf-8')
                     )
                     if self.need_LR:
                         lr_img_bytes = txn.get(
                             'lr_{}_{}'.format(
-                                self.l_res, str(index).zfill(5)).encode('utf-8')
+                                self.l_res, str(new_index).zfill(5)).encode('utf-8')
                         )
                 img_HR = Image.open(BytesIO(hr_img_bytes)).convert("RGB")
                 img_SR = Image.open(BytesIO(sr_img_bytes)).convert("RGB")
