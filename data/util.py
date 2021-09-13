@@ -62,10 +62,7 @@ def transform2tensor(img, min_max=(0, 1)):
 
 
 def transform_augment(img_list, split='val', min_max=(0, 1)):
-    ret_img = []
-    for img in img_list:
-        img = transform2numpy(img)
-        img = augment(img, split)
-        img = transform2tensor(img, min_max)
-        ret_img.append(img)
+    imgs = [transform2numpy(img) for img in img_list]
+    imgs = augment(imgs, split=split)
+    ret_img = [transform2tensor(img, min_max) for img in imgs]
     return ret_img

@@ -103,8 +103,10 @@ class DDPM(BaseModel):
             out_dict['SR'] = self.SR.detach().float().cpu()
             out_dict['INF'] = self.data['SR'].detach().float().cpu()
             out_dict['HR'] = self.data['HR'].detach().float().cpu()
-            if need_LR:
+            if need_LR and 'LR' in self.data:
                 out_dict['LR'] = self.data['LR'].detach().float().cpu()
+            else:
+                out_dict['LR'] = out_dict['INF']
         return out_dict
 
     def print_network(self):
