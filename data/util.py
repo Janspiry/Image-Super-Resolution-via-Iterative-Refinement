@@ -1,5 +1,6 @@
 import os
 import torch
+import torchvision
 import random
 import numpy as np
 
@@ -61,8 +62,22 @@ def transform2tensor(img, min_max=(0, 1)):
     return img
 
 
-def transform_augment(img_list, split='val', min_max=(0, 1)):
-    imgs = [transform2numpy(img) for img in img_list]
-    imgs = augment(imgs, split=split)
-    ret_img = [transform2tensor(img, min_max) for img in imgs]
+# implementation by numpy and torch
+# def transform_augment(img_list, split='val', min_max=(0, 1)):
+#     imgs = [transform2numpy(img) for img in img_list]
+#     imgs = augment(imgs, split=split)
+#     ret_img = [transform2tensor(img, min_max) for img in imgs]
+#     return ret_img
+
+
+# implementation by torchvision, detail in https://github.com/Janspiry/Image-Super-Resolution-via-Iterative-Refinement/issues/14
+totensor = torchvision.transforms.ToTensor()
+hflip = torchvision.transforms.RandomHorizontalFlip()
+def transform_augment(img_list, split='val', min_max=(0, 1)):    
+    imgs = [totensor(img) for img in img_list]
+    if split == 'train':
+        imgs = torch.stack(imgs, 0)
+        imgs = hflip(imgs)
+        imgs = torch.unbind(imgs, dim=0)
+    ret_img = [img * (min_max[1] - min_max[0]) + min_max[0] for img in imgs]
     return ret_img
