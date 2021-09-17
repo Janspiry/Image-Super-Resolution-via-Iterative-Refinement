@@ -20,7 +20,6 @@ class DDPM(BaseModel):
         self.set_loss()
         self.set_new_noise_schedule(
             opt['model']['beta_schedule']['train'], schedule_phase='train')
-        self.load_network()
         if self.opt['phase'] == 'train':
             self.netG.train()
             # find the parameters to optimize
@@ -40,6 +39,7 @@ class DDPM(BaseModel):
             self.optG = torch.optim.Adam(
                 optim_params, lr=opt['train']["optimizer"]["lr"])
             self.log_dict = OrderedDict()
+        self.load_network()
         self.print_network()
 
     def feed_data(self, data):
