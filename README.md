@@ -34,14 +34,13 @@ There are some implement details with paper description, which maybe different w
 - [x] metrics evaluation
 - [x] multi-gpu support
 - [x] resume training / pretrained model
+- [x] validate alone script
 
 
 
 ## Results
 
-We set the maximum reverse steps budget to 2000 now.
-
-*Note:* Limited to model parameters in `Nvidia 1080Ti`, image noise and hue deviation occasionally appears in high-resolution images, resulting in low scores.
+*Note:*  We set the maximum reverse steps budget to 2000 now. Limited to model parameters in `Nvidia 1080Ti`, **image noise** and **hue deviation** occasionally appears in high-resolution images, resulting in low scores.  There are a lot room to optimization.
 
 | Tasks/Metrics        | SSIM(+) | PSNR(+) | FID(-)  | IS(+)   |
 | -------------------- | ----------- | -------- | ---- | ---- |
@@ -68,8 +67,6 @@ We set the maximum reverse steps budget to 2000 now.
 
 
 
-
-
 ## Usage
 
 ### Pretrained Model
@@ -86,8 +83,6 @@ This paper is based on "Denoising Diffusion Probabilistic Models", and we build 
 # Download the pretrain model and edit [sr|sample]_[ddpm|sr3]_[resolution option].json about "resume_state":
 "resume_state": [your pretrain model path]
 ```
-
-We have not trained the model until converged for time reason, and reduced model parameters in order to run on a single GPU,  which means there are a lot room to optimization.
 
 ### Data Prepare
 
@@ -160,12 +155,18 @@ python sr.py -p train -c config/sr_sr3.json
 ```python
 # Edit json to add pretrain model path and run the evaluation 
 python sr.py -p val -c config/sr_sr3.json
+
+# Quantitative evaluation alone using SSIM/PSNR metrics on given result root
+python eval.py -p [result root]
 ```
 
-### Evaluation Alone
+### Inference Alone
+
+Set the HR (vanilla high resolution images), SR (images need processed) image path like step in `Own Data`. HR directory contexts can be copy from SR, and LR directory  is unnecessary. 
+
 ```python
-# Quantitative evaluation using SSIM/PSNR metrics on given dataset root
-python eval.py -p [dataset root]
+# run the script
+python infer.py -p [dataset root]
 ```
 
 
