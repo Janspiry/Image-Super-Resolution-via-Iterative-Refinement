@@ -166,7 +166,7 @@ Set the HR (vanilla high resolution images), SR (images need processed) image pa
 
 ```python
 # run the script
-python infer.py -p [dataset root]
+python infer.py -c [config file]
 ```
 
 
