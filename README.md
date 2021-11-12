@@ -14,7 +14,7 @@ There are some implement details with paper description, which maybe different w
 - We used the attention mechanism in low resolution feature(16×16) like vanilla `DDPM`.
 - We encoding the $\gamma$ as `FilM` strcutrue did in `WaveGrad`, and embedding it without affine transformation.
 
-
+**If you just want to upscale `64x64px` -> `512x512px` images using the pre-trained model, check out [this google colab script](https://colab.research.google.com/drive/1G1txPI1GKueKH0cSi_DgQFKwfyJOXlhY?usp=sharing).**
 
 ## Status
 
