@@ -40,7 +40,7 @@ There are some implement details with paper description, which maybe different w
 
 ## Results
 
-*Note:*  We set the maximum reverse steps budget to 2000 now. Limited to model parameters in `Nvidia 1080Ti`, **image noise** and **hue deviation** occasionally appears in high-resolution images, resulting in low scores.  There are a lot room to optimization.
+*Note:*  We set the maximum reverse steps budget to 2000 now. Limited to model parameters in `Nvidia 1080Ti`, **image noise** and **hue deviation** occasionally appears in high-resolution images, resulting in low scores.  There are a lot room to optimization.  **Welcome to any contributions for more extensive experiments and code enhancements.**
 
 | Tasks/Metrics        | SSIM(+) | PSNR(+) | FID(-)  | IS(+)   |
 | -------------------- | ----------- | -------- | ---- | ---- |
@@ -73,11 +73,11 @@ There are some implement details with paper description, which maybe different w
 
 This paper is based on "Denoising Diffusion Probabilistic Models", and we build both `DDPM/SR3` network structure, which use timesteps/gama as model embedding input, respectively. In our experiments, `SR3` model can achieve better visual results with same reverse steps and learning rate. You can select the json files with annotated suffix names to train different model.
 
-| Tasks                             | Google Drive                                                 |
-| --------------------------------- | ------------------------------------------------------------ |
-| 16×16 -> 128×128 on FFHQ-CelebaHQ | [SR3](https://drive.google.com/drive/folders/12jh0K8XoM1FqpeByXvugHHAF3oAZ8KRu?usp=sharing) |
-| 64×64 -> 512×512 on FFHQ-CelebaHQ | [SR3](https://drive.google.com/drive/folders/1mCiWhFqHyjt5zE4IdA41fjFwCYdqDzSF?usp=sharing) |
-| 128×128 face generation on FFHQ   | [SR3](https://drive.google.com/drive/folders/1ldukMgLKAxE7qiKdFJlu-qubGlnW-982?usp=sharing) |
+| Tasks                             | Platform（Code：qwer)                                        |      |
+| --------------------------------- | ------------------------------------------------------------ | ---- |
+| 16×16 -> 128×128 on FFHQ-CelebaHQ | [Google Drive](https://drive.google.com/drive/folders/12jh0K8XoM1FqpeByXvugHHAF3oAZ8KRu?usp=sharing)\|[Baidu Yun](https://pan.baidu.com/s/1OzsGZA2Vmq1ZL_VydTbVTQ) |      |
+| 64×64 -> 512×512 on FFHQ-CelebaHQ | [Google Drive](https://drive.google.com/drive/folders/1mCiWhFqHyjt5zE4IdA41fjFwCYdqDzSF?usp=sharing)\|[Baidu Yun](https://pan.baidu.com/s/1orzFmVDxMmlXQa2Ty9zY3g) |      |
+| 128×128 face generation on FFHQ   | [Google Drive](https://drive.google.com/drive/folders/1ldukMgLKAxE7qiKdFJlu-qubGlnW-982?usp=sharing)\|[Baidu Yun](https://pan.baidu.com/s/1Vsd08P1A-48OGmnRV0E7Fg ) |      |
 
 ```python
 # Download the pretrain model and edit [sr|sample]_[ddpm|sr3]_[resolution option].json about "resume_state":
@@ -133,7 +133,7 @@ dataset/celebahq_16_128/
 then you need to change the dataset config to your data path and image resolution: 
 ```json
 "datasets": {
-    "train|val": {
+    "train|val": { // train and validation part
         "dataroot": "dataset/celebahq_16_128",
         "l_resolution": 16, // low resolution need to super_resolution
         "r_resolution": 128, // high resolution
