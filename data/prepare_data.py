@@ -7,6 +7,7 @@ from multiprocessing.sharedctypes import RawValue
 from PIL import Image
 from tqdm import tqdm
 from torchvision.transforms import functional as trans_fn
+from torchvision.transforms import InterpolationMode
 import os
 from pathlib import Path
 import lmdb
@@ -27,7 +28,7 @@ def image_convert_bytes(img):
     return buffer.getvalue()
 
 
-def resize_multiple(img, sizes=(16, 128), resample=Image.BICUBIC, lmdb_save=False):
+def resize_multiple(img, sizes=(16, 128), resample=InterpolationMode.BICUBIC, lmdb_save=False):
     lr_img = resize_and_convert(img, sizes[0], resample)
     hr_img = resize_and_convert(img, sizes[1], resample)
     sr_img = resize_and_convert(lr_img, sizes[1], resample)
@@ -97,7 +98,7 @@ def all_threads_inactive(worker_threads):
             return False
     return True
 
-def prepare(img_path, out_path, n_worker, sizes=(16, 128), resample=Image.BICUBIC, lmdb_save=False):
+def prepare(img_path, out_path, n_worker, sizes=(16, 128), resample=InterpolationMode.BICUBIC, lmdb_save=False):
     resize_fn = partial(resize_worker, sizes=sizes,
                         resample=resample, lmdb_save=lmdb_save)
     files = [p for p in Path(
@@ -132,6 +133,7 @@ def prepare(img_path, out_path, n_worker, sizes=(16, 128), resample=Image.BICUBI
         while not all_threads_inactive(worker_threads):
             print("{}/{} images processed".format(wctx.value(), total_count))
             time.sleep(0.1)
+        print("{}/{} images processed".format(wctx.value(), total_count))    
 
     else:
         total = 0
@@ -173,7 +175,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    resample_map = {'bilinear': Image.BILINEAR, 'bicubic': Image.BICUBIC}
+    resample_map = {'bilinear': InterpolationMode.BILINEAR, 'bicubic': InterpolationMode.BICUBIC}
     resample = resample_map[args.resample]
     sizes = [int(s.strip()) for s in args.size.split(',')]
 
