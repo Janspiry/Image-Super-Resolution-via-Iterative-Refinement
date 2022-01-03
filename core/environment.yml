@@ -184,5 +184,5 @@ dependencies:
     - tqdm==4.55.0
     - traitlets==5.0.5
     - wcwidth==0.2.5
-prefix: /home/jiangliangwei_2021/anaconda3/envs/pytorch
+prefix: /home/user/anaconda3/envs/pytorch
 
