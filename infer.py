@@ -5,9 +5,11 @@ import argparse
 import logging
 import core.logger as Logger
 import core.metrics as Metrics
+from core.wandb_logger import WandbLogger
 from tensorboardX import SummaryWriter
 import os
 import numpy as np
+import wandb
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -16,6 +18,8 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--phase', type=str, choices=['val'], help='val(generation)', default='val')
     parser.add_argument('-gpu', '--gpu_ids', type=str, default=None)
     parser.add_argument('-debug', '-d', action='store_true')
+    parser.add_argument('-enable_wandb', action='store_true')
+    parser.add_argument('-log_infer', action='store_true')
     
     # parse configs
     args = parser.parse_args()
@@ -33,6 +37,12 @@ if __name__ == "__main__":
     logger = logging.getLogger('base')
     logger.info(Logger.dict2str(opt))
     tb_logger = SummaryWriter(log_dir=opt['path']['tb_logger'])
+
+    # Initialize WandbLogger
+    if opt['enable_wandb']:
+        wandb_logger = WandbLogger(opt)
+    else:
+        wandb_logger = None
 
     # dataset
     for phase, dataset_opt in opt['datasets'].items():
@@ -85,3 +95,9 @@ if __name__ == "__main__":
             hr_img, '{}/{}_{}_hr.png'.format(result_path, current_step, idx))
         Metrics.save_img(
             fake_img, '{}/{}_{}_inf.png'.format(result_path, current_step, idx))
+
+        if wandb_logger and opt['log_infer']:
+            wandb_logger.log_eval_data(fake_img, Metrics.tensor2img(visuals['SR'][-1]), hr_img)
+
+    if wandb_logger and opt['log_infer']:
+        wandb_logger.log_eval_table(commit=True)

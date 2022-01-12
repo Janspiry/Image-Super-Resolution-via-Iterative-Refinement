@@ -21,7 +21,6 @@ if __name__ == "__main__":
     parser.add_argument('-debug', '-d', action='store_true')
     parser.add_argument('-enable_wandb', action='store_true')
     parser.add_argument('-log_wandb_ckpt', action='store_true')
-    parser.add_argument('-log_eval', action='store_true')
 
     # parse configs
     args = parser.parse_args()
@@ -139,6 +138,7 @@ if __name__ == "__main__":
 
         result_path = '{}'.format(opt['path']['results'])
         os.makedirs(result_path, exist_ok=True)
+        sample_imgs = []
         for idx in range(sample_sum):
             idx += 1
             diffusion.sample(continous=True)
@@ -159,3 +159,8 @@ if __name__ == "__main__":
                     sample_img, '{}/{}_{}_sample_process.png'.format(result_path, current_step, idx))
                 Metrics.save_img(
                     Metrics.tensor2img(visuals['SAM'][-1]), '{}/{}_{}_sample.png'.format(result_path, current_step, idx))
+            
+            sample_imgs.append(Metrics.tensor2img(visuals['SAM'][-1]))
+
+        if wandb_logger:
+            wandb_logger.log_images('eval_images', sample_imgs)
