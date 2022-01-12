@@ -17,7 +17,7 @@
             "name": "FFHQ",
             "mode": "HR", // whether need LR img
             "dataroot": "dataset/ffhq_16_128",
-            "datatype": "img", //lmdb or img, path of img files
+            "datatype": "lmdb", //lmdb or img, path of img files
             "l_resolution": 16, // low resolution need to super_resolution
             "r_resolution": 128, // high resolution
             "batch_size": 4,
@@ -28,8 +28,8 @@
         "val": {
             "name": "CelebaHQ",
             "mode": "LRHR",
-            "dataroot": "dataset/ffhq_16_128",
-            "datatype": "img", //lmdb or img, path of img files
+            "dataroot": "dataset/celebahq_16_128",
+            "datatype": "lmdb", //lmdb or img, path of img files
             "l_resolution": 16,
             "r_resolution": 128,
             "data_len": 50 // data length in validation 
