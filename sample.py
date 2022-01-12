@@ -42,9 +42,6 @@ if __name__ == "__main__":
     # Initialize WandbLogger
     if opt['enable_wandb']:
         wandb_logger = WandbLogger(opt)
-        # wandb.define_metric('validation/val_step')
-        # wandb.define_metric('epoch')
-        # wandb.define_metric("validation/*", step_metric="val_step")
         val_step = 0
     else:
         wandb_logger = None
