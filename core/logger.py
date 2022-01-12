@@ -22,6 +22,9 @@ def parse(args):
     phase = args.phase
     opt_path = args.config
     gpu_ids = args.gpu_ids
+    enable_wandb = args.enable_wandb
+    log_wandb_ckpt = args.log_wandb_ckpt
+    log_eval = args.log_eval
     # remove comments starting with '//'
     json_str = ''
     with open(opt_path, 'r') as f:
@@ -71,6 +74,11 @@ def parse(args):
     # validation in train phase
     if phase == 'train':
         opt['datasets']['val']['data_len'] = 3
+
+    # W&B Logging
+    opt['enable_wandb'] = enable_wandb
+    opt['log_wandb_ckpt'] = log_wandb_ckpt
+    opt['log_eval'] = log_eval
 
     return opt
 
