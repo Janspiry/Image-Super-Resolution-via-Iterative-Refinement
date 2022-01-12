@@ -25,12 +25,21 @@ class WandbLogger:
 
         self.config = self._wandb.config
 
-        if self.config['log_eval']:
+        if self.config.get('log_eval', None):
             self.eval_table = self._wandb.Table(columns=['fake_image', 
                                                          'sr_image', 
                                                          'hr_image',
                                                          'psnr',
                                                          'ssim'])
+        else:
+            self.eval_table = None
+
+        if self.config.get('log_infer', None):
+            self.infer_table = self._wandb.Table(columns=['fake_image', 
+                                                         'sr_image', 
+                                                         'hr_image'])
+        else:
+            self.infer_table = None
 
     def log_metrics(self, metrics, commit=True): 
         """
@@ -48,6 +57,15 @@ class WandbLogger:
         image_array: numpy array of image.
         """
         self._wandb.log({key_name: self._wandb.Image(image_array)})
+
+    def log_images(self, key_name, list_images):
+        """
+        Log list of image array onto W&B
+
+        key_name: name of the key 
+        list_images: list of numpy image arrays
+        """
+        self._wandb.log({key_name: [self._wandb.Image(img) for img in list_images]})
 
     def log_checkpoint(self, current_epoch, current_step):
         """
@@ -69,20 +87,30 @@ class WandbLogger:
         model_artifact.add_file(opt_path)
         self._wandb.log_artifact(model_artifact, aliases=["latest"])
 
-    def log_eval_data(self, fake_img, sr_img, hr_img, psnr, ssim):
+    def log_eval_data(self, fake_img, sr_img, hr_img, psnr=None, ssim=None):
         """
         Add data row-wise to the initialized table.
         """
-        self.eval_table.add_data(
-            self._wandb.Image(fake_img),
-            self._wandb.Image(sr_img),
-            self._wandb.Image(hr_img),
-            psnr,
-            ssim
-        )
+        if psnr is not None and ssim is not None:
+            self.eval_table.add_data(
+                self._wandb.Image(fake_img),
+                self._wandb.Image(sr_img),
+                self._wandb.Image(hr_img),
+                psnr,
+                ssim
+            )
+        else:
+            self.infer_table.add_data(
+                self._wandb.Image(fake_img),
+                self._wandb.Image(sr_img),
+                self._wandb.Image(hr_img)
+            )
 
     def log_eval_table(self, commit=False):
         """
         Log the table
         """
-        self._wandb.log({'eval_data': self.eval_table}, commit=commit)
+        if self.eval_table:
+            self._wandb.log({'eval_data': self.eval_table}, commit=commit)
+        elif self.infer_table:
+            self._wandb.log({'infer_data': self.infer_table}, commit=commit)
