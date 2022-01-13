@@ -89,5 +89,8 @@
             "update_ema_every": 1,
             "ema_decay": 0.9999
         }
+    },
+    "wandb": {
+        "project": "generation_ffhq_sr3"
     }
 }
