@@ -5,9 +5,11 @@ import argparse
 import logging
 import core.logger as Logger
 import core.metrics as Metrics
+from core.wandb_logger import WandbLogger
 from tensorboardX import SummaryWriter
 import os
 import numpy as np
+import wandb
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -17,6 +19,9 @@ if __name__ == "__main__":
                         help='Run either train(training) or val(generation)', default='train')
     parser.add_argument('-gpu', '--gpu_ids', type=str, default=None)
     parser.add_argument('-debug', '-d', action='store_true')
+    parser.add_argument('-enable_wandb', action='store_true')
+    parser.add_argument('-log_wandb_ckpt', action='store_true')
+    parser.add_argument('-log_eval', action='store_true')
 
     # parse configs
     args = parser.parse_args()
@@ -34,6 +39,16 @@ if __name__ == "__main__":
     logger = logging.getLogger('base')
     logger.info(Logger.dict2str(opt))
     tb_logger = SummaryWriter(log_dir=opt['path']['tb_logger'])
+
+    # Initialize WandbLogger
+    if opt['enable_wandb']:
+        wandb_logger = WandbLogger(opt)
+        wandb.define_metric('validation/val_step')
+        wandb.define_metric('epoch')
+        wandb.define_metric("validation/*", step_metric="val_step")
+        val_step = 0
+    else:
+        wandb_logger = None
 
     # dataset
     for phase, dataset_opt in opt['datasets'].items():
@@ -81,6 +96,9 @@ if __name__ == "__main__":
                         tb_logger.add_scalar(k, v, current_step)
                     logger.info(message)
 
+                    if wandb_logger:
+                        wandb_logger.log_metrics(logs)
+
                 # validation
                 if current_step % opt['train']['val_freq'] == 0:
                     avg_psnr = 0.0
@@ -118,6 +136,12 @@ if __name__ == "__main__":
                         avg_psnr += Metrics.calculate_psnr(
                             sr_img, hr_img)
 
+                        if wandb_logger:
+                            wandb_logger.log_image(
+                                f'validation_{idx}', 
+                                np.concatenate((fake_img, sr_img, hr_img), axis=1)
+                            )
+
                     avg_psnr = avg_psnr / idx
                     diffusion.set_new_noise_schedule(
                         opt['model']['beta_schedule']['train'], schedule_phase='train')
@@ -129,9 +153,23 @@ if __name__ == "__main__":
                     # tensorboard logger
                     tb_logger.add_scalar('psnr', avg_psnr, current_step)
 
+                    if wandb_logger:
+                        wandb_logger.log_metrics({
+                            'validation/val_psnr': avg_psnr,
+                            'validation/val_step': val_step
+                        })
+                        val_step += 1
+
                 if current_step % opt['train']['save_checkpoint_freq'] == 0:
                     logger.info('Saving models and training states.')
                     diffusion.save_network(current_epoch, current_step)
+
+                    if wandb_logger and opt['log_wandb_ckpt']:
+                        wandb_logger.log_checkpoint(current_epoch, current_step)
+
+            if wandb_logger:
+                wandb_logger.log_metrics({'epoch': current_epoch-1})
+
         # save model
         logger.info('End of training.')
     else:
@@ -175,10 +213,15 @@ if __name__ == "__main__":
                 fake_img, '{}/{}_{}_inf.png'.format(result_path, current_step, idx))
 
             # generation
-            avg_psnr += Metrics.calculate_psnr(
-                Metrics.tensor2img(visuals['SR'][-1]), hr_img)
-            avg_ssim += Metrics.calculate_ssim(
-                Metrics.tensor2img(visuals['SR'][-1]), hr_img)
+            eval_psnr = Metrics.calculate_psnr(Metrics.tensor2img(visuals['SR'][-1]), hr_img)
+            eval_ssim = Metrics.calculate_ssim(Metrics.tensor2img(visuals['SR'][-1]), hr_img)
+
+            avg_psnr += eval_psnr
+            avg_ssim += eval_ssim
+
+            if wandb_logger and opt['log_eval']:
+                wandb_logger.log_eval_data(fake_img, Metrics.tensor2img(visuals['SR'][-1]), hr_img, eval_psnr, eval_ssim)
+
         avg_psnr = avg_psnr / idx
         avg_ssim = avg_ssim / idx
 
@@ -188,3 +231,11 @@ if __name__ == "__main__":
         logger_val = logging.getLogger('val')  # validation logger
         logger_val.info('<epoch:{:3d}, iter:{:8,d}> psnr: {:.4e}, ssim：{:.4e}'.format(
             current_epoch, current_step, avg_psnr, avg_ssim))
+
+        if wandb_logger:
+            if opt['log_eval']:
+                wandb_logger.log_eval_table()
+            wandb_logger.log_metrics({
+                'PSNR': float(avg_psnr),
+                'SSIM': float(avg_ssim)
+            })
