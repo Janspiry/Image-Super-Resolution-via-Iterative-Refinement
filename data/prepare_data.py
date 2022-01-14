@@ -130,7 +130,7 @@ def prepare(img_path, out_path, n_worker, sizes=(16, 128), resample=Image.BICUBI
         
         total_count = str(len(files))
         while not all_threads_inactive(worker_threads):
-            print("{}/{} images processed".format(wctx.value(), total_count))
+            print("\r{}/{} images processed".format(wctx.value(), total_count), end=" ")
             time.sleep(0.1)
 
     else:
