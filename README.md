@@ -35,6 +35,7 @@ There are some implement details with paper description, which maybe different w
 - [x] multi-gpu support
 - [x] resume training / pretrained model
 - [x] validate alone script
+- [x] [Weights and Biases Logging](https://github.com/Janspiry/Image-Super-Resolution-via-Iterative-Refinement/pull/44) 🌟 NEW
 
 
 
@@ -176,6 +177,24 @@ Set the HR (vanilla high resolution images), SR (images need processed) image pa
 python infer.py -c [config file]
 ```
 
+## Weights and Biases 🎉
+
+The library now supports experiment tracking, model checkpointing and model prediction visualization with [Weights and Biases](https://wandb.ai/site). You will need to [install W&B](https://pypi.org/project/wandb/) and login by using your [access token](https://wandb.ai/authorize). 
+
+```
+pip install wandb
+
+# get your access token from wandb.ai/authorize
+wandb login
+```
+
+W&B logging functionality is added to `sr.py`, `sample.py` and `infer.py` files. You can pass `-enable_wandb` to start logging.
+
+- `-log_wandb_ckpt`: Pass this argument along with `-enable_wandb` to save model checkpoints as [W&B Artifacts](https://docs.wandb.ai/guides/artifacts). Both `sr.py` and `sample.py` is enabled with model checkpointing. 
+- `-log_eval`: Pass this argument along with `-enable_wandb` to save the evaluation result as interactive [W&B Tables](https://docs.wandb.ai/guides/data-vis). Note that only `sr.py` is enabled with this feature. If you run `sample.py` in eval mode, the generated images will automatically be logged as image media panel. 
+- `-log_infer`: While running `infer.py` pass this argument along with `-enable_wandb` to log the inference results as interactive W&B Tables. 
+
+You can find more on using these features [here](https://github.com/Janspiry/Image-Super-Resolution-via-Iterative-Refinement/pull/44). 🚀
 
 
 ## Acknowledge
