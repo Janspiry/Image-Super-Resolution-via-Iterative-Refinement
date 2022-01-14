@@ -8,6 +8,11 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+*[celebahq|ffhq]_[128|512]
+*.mdb
+*.png
+!*000[3-4][0-1].png
+
 experiments/*
 build/
 develop-eggs/

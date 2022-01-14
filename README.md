@@ -125,6 +125,7 @@ then you need to change the datasets config to your data path and image resoluti
 #### Own Data
 
 You also can use your image data by following steps.
+We have some examples in dataset folder.
 
 At first, you should organize images layout like this:
 
