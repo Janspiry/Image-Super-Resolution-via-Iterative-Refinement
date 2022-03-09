@@ -13,6 +13,7 @@ There are some implement details with paper description, which maybe different w
 - We used the ResNet block and channel concatenation style like vanilla `DDPM`.
 - We used the attention mechanism in low resolution feature(16×16) like vanilla `DDPM`.
 - We encoding the $\gamma$ as `FilM` strcutrue did in `WaveGrad`, and embedding it without affine transformation.
+- We define posterior variance as $ \dfrac{1-\gamma_{t-1}}{1-\gamma_{t}}  \beta_t $  rather than $\beta_t$,  which have the similar results in vanilla paper.
 
 **If you just want to upscale `64x64px` -> `512x512px` images using the pre-trained model, check out [this google colab script](https://colab.research.google.com/drive/1G1txPI1GKueKH0cSi_DgQFKwfyJOXlhY?usp=sharing).**
 
@@ -71,9 +72,7 @@ There are some implement details with paper description, which maybe different w
 ## Usage
 ### Environment
 ```python
-# Copy the pytorch environment using the dependencies files, and you can choose the either of the following ways.
-conda env create -f core/environment.yml
-conda create  --name pytorch --file core/environment.txt
+pip install -r requirement.txt
 ```
 
 ### Pretrained Model
@@ -125,20 +124,27 @@ then you need to change the datasets config to your data path and image resoluti
 
 #### Own Data
 
-You also can use your image data by following steps.
-We have some examples in dataset folder.
+You also can use your image data by following steps, and we have some examples in dataset folder.
 
-At first, you should organize images layout like this:
+At first, you should organize images layout like this, this step can be finished by `data/prepare_data.py` automatically:
 
 ```shell
-# set the high/low resolution images, bicubic interpolation images path
+# set the high/low resolution images, bicubic interpolation images path 
 dataset/celebahq_16_128/
-├── hr_128
-├── lr_16
-└── sr_16_128
+├── hr_128 # it's same with sr_16_128 directory if you don't have ground-truth images.
+├── lr_16 # vinilla low resolution images
+└── sr_16_128 # images ready to super resolution
 ```
 
+```python
+# super resolution from 16 to 128
+python data/prepare_data.py  --path [dataset root]  --out celebahq --size 16,128 -l
+```
+
+*Note: Above script can be used whether you have the vinilla high-resolution images or not.*
+
 then you need to change the dataset config to your data path and image resolution: 
+
 ```json
 "datasets": {
     "train|val": { // train and validation part
@@ -170,7 +176,7 @@ python eval.py -p [result root]
 
 ### Inference Alone
 
-Set the HR (vanilla high resolution images), SR (images need processed) image path like step in `Own Data`. HR directory contexts can be copy from SR, and LR directory  is unnecessary. 
+Set the  image path like steps in `Own Data`, then run the script:
 
 ```python
 # run the script

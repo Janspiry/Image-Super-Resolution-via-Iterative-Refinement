@@ -8,8 +8,6 @@ import core.metrics as Metrics
 from core.wandb_logger import WandbLogger
 from tensorboardX import SummaryWriter
 import os
-import numpy as np
-import wandb
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
