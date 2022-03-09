@@ -9,7 +9,6 @@ from core.wandb_logger import WandbLogger
 from tensorboardX import SummaryWriter
 import os
 import numpy as np
-import wandb
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -42,6 +41,7 @@ if __name__ == "__main__":
 
     # Initialize WandbLogger
     if opt['enable_wandb']:
+        import wandb
         wandb_logger = WandbLogger(opt)
         wandb.define_metric('validation/val_step')
         wandb.define_metric('epoch')
