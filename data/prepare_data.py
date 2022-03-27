@@ -6,6 +6,7 @@ from functools import partial
 from multiprocessing.sharedctypes import RawValue
 from PIL import Image
 from tqdm import tqdm
+from torchvision.transforms import InterpolationMode
 from torchvision.transforms import functional as trans_fn
 import os
 from pathlib import Path
@@ -27,7 +28,7 @@ def image_convert_bytes(img):
     return buffer.getvalue()
 
 
-def resize_multiple(img, sizes=(16, 128), resample=Image.BICUBIC, lmdb_save=False):
+def resize_multiple(img, sizes=(16, 128), resample=InterpolationMode.BICUBIC, lmdb_save=False):
     lr_img = resize_and_convert(img, sizes[0], resample)
     hr_img = resize_and_convert(img, sizes[1], resample)
     sr_img = resize_and_convert(lr_img, sizes[1], resample)
@@ -39,6 +40,7 @@ def resize_multiple(img, sizes=(16, 128), resample=Image.BICUBIC, lmdb_save=Fals
 
     return [lr_img, hr_img, sr_img]
 
+
 def resize_worker(img_file, sizes, resample, lmdb_save=False):
     img = Image.open(img_file)
     img = img.convert('RGB')
@@ -46,6 +48,7 @@ def resize_worker(img_file, sizes, resample, lmdb_save=False):
         img, sizes=sizes, resample=resample, lmdb_save=lmdb_save)
 
     return img_file.name.split('.')[0], out
+
 
 class WorkingContext():
     def __init__(self, resize_fn, lmdb_save, out_path, env, sizes):
@@ -66,6 +69,7 @@ class WorkingContext():
     def value(self):
         with self.counter_lock:
             return self.counter.value
+
 
 def prepare_process_worker(wctx, file_subset):
     for file in file_subset:
@@ -89,7 +93,9 @@ def prepare_process_worker(wctx, file_subset):
         curr_total = wctx.inc_get()
         if wctx.lmdb_save:
             with wctx.env.begin(write=True) as txn:
-                txn.put('length'.encode('utf-8'), str(curr_total).encode('utf-8'))
+                txn.put('length'.encode('utf-8'),
+                        str(curr_total).encode('utf-8'))
+
 
 def all_threads_inactive(worker_threads):
     for thread in worker_threads:
@@ -97,7 +103,8 @@ def all_threads_inactive(worker_threads):
             return False
     return True
 
-def prepare(img_path, out_path, n_worker, sizes=(16, 128), resample=Image.BICUBIC, lmdb_save=False):
+
+def prepare(img_path, out_path, n_worker, sizes=(16, 128), resample=InterpolationMode.BICUBIC, lmdb_save=False):
     resize_fn = partial(resize_worker, sizes=sizes,
                         resample=resample, lmdb_save=lmdb_save)
     files = [p for p in Path(
@@ -124,10 +131,11 @@ def prepare(img_path, out_path, n_worker, sizes=(16, 128), resample=Image.BICUBI
 
         # start worker processes, monitor results
         for i in range(n_worker):
-            proc = Process(target=prepare_process_worker, args=(wctx, file_subsets[i]))
+            proc = Process(target=prepare_process_worker,
+                           args=(wctx, file_subsets[i]))
             proc.start()
             worker_threads.append(proc)
-        
+
         total_count = str(len(files))
         while not all_threads_inactive(worker_threads):
             print("\r{}/{} images processed".format(wctx.value(), total_count), end=" ")
@@ -156,7 +164,9 @@ def prepare(img_path, out_path, n_worker, sizes=(16, 128), resample=Image.BICUBI
             total += 1
             if lmdb_save:
                 with env.begin(write=True) as txn:
-                    txn.put('length'.encode('utf-8'), str(total).encode('utf-8'))
+                    txn.put('length'.encode('utf-8'),
+                            str(total).encode('utf-8'))
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -173,7 +183,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    resample_map = {'bilinear': Image.BILINEAR, 'bicubic': Image.BICUBIC}
+    resample_map = {'bilinear': InterpolationMode.BILINEAR,
+                    'bicubic': InterpolationMode.BICUBIC}
     resample = resample_map[args.resample]
     sizes = [int(s.strip()) for s in args.size.split(',')]
 
