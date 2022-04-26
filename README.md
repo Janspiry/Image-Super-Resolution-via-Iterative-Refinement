@@ -17,6 +17,8 @@ There are some implement details with paper description, which may be different 
 
 ## Status
 
+**★★★ NEW: Its follow-up [Palette-Image-to-Image-Diffusion-Models](https://arxiv.org/abs/2111.05826) is now available; See the details [here](https://github.com/Janspiry/Palette-Image-to-Image-Diffusion-Models) ★★★**
+
 ### Conditional generation(super resolution)
 
 - [x] 16×16 -> 128×128 on FFHQ-CelebaHQ
