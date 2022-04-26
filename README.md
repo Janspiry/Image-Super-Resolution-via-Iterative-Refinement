@@ -2,17 +2,15 @@
 
 [Paper](https://arxiv.org/pdf/2104.07636.pdf ) |  [Project](https://iterative-refinement.github.io/ )
 
-
-
 ## Brief
 
-This is a unoffical implementation about **Image Super-Resolution via Iterative Refinement(SR3)** by **Pytorch**.
+This is an unofficial implementation of **Image Super-Resolution via Iterative Refinement(SR3)** by **Pytorch**.
 
-There are some implement details with paper description, which maybe different with actual `SR3` structure due to details missing.
+There are some implement details with paper description, which may be different from the actual `SR3` structure due to details missing.
 
 - We used the ResNet block and channel concatenation style like vanilla `DDPM`.
-- We used the attention mechanism in low resolution feature(16×16) like vanilla `DDPM`.
-- We encoding the $\gamma$ as `FilM` strcutrue did in `WaveGrad`, and embedding it without affine transformation.
+- We used the attention mechanism in low-resolution features(16×16) like vanilla `DDPM`.
+- We encode the $\gamma$ as `FilM` structure did in `WaveGrad`, and embed it without affine transformation.
 - We define posterior variance as $ \dfrac{1-\gamma_{t-1}}{1-\gamma_{t}}  \beta_t $  rather than $\beta_t$,  which have the similar results in vanilla paper.
 
 **If you just want to upscale `64x64px` -> `512x512px` images using the pre-trained model, check out [this google colab script](https://colab.research.google.com/drive/1G1txPI1GKueKH0cSi_DgQFKwfyJOXlhY?usp=sharing).**
@@ -42,7 +40,7 @@ There are some implement details with paper description, which maybe different w
 
 ## Results
 
-*Note:*  We set the maximum reverse steps budget to 2000 now. Limited to model parameters in `Nvidia 1080Ti`, **image noise** and **hue deviation** occasionally appears in high-resolution images, resulting in low scores.  There are a lot room to optimization.  **Welcome to any contributions for more extensive experiments and code enhancements.**
+*Note:*  We set the maximum reverse steps budget to 2000 now. Limited to model parameters in `Nvidia 1080Ti`, **image noise** and **hue deviation** occasionally appear in high-resolution images, resulting in low scores.  There is a lot of room to optimization.  **Welcome to any contributions for more extensive experiments and code enhancements.**
 
 | Tasks/Metrics        | SSIM(+) | PSNR(+) | FID(-)  | IS(+)   |
 | -------------------- | ----------- | -------- | ---- | ---- |
@@ -77,7 +75,7 @@ pip install -r requirement.txt
 
 ### Pretrained Model
 
-This paper is based on "Denoising Diffusion Probabilistic Models", and we build both `DDPM/SR3` network structure, which use timesteps/gama as model embedding input, respectively. In our experiments, `SR3` model can achieve better visual results with same reverse steps and learning rate. You can select the json files with annotated suffix names to train different model.
+This paper is based on "Denoising Diffusion Probabilistic Models", and we build both DDPM/SR3 network structures, which use timesteps/gama as model embedding input, respectively. In our experiments, SR3 model can achieve better visual results with the same reverse steps and learning rate. You can select the JSON files with annotated suffix names to train the different models.
 
 | Tasks                             | Platform（Code：qwer)                                        | 
 | --------------------------------- | ------------------------------------------------------------ |
@@ -126,7 +124,7 @@ then you need to change the datasets config to your data path and image resoluti
 
 You also can use your image data by following steps, and we have some examples in dataset folder.
 
-At first, you should organize images layout like this, this step can be finished by `data/prepare_data.py` automatically:
+At first, you should organize the images layout like this, this step can be finished by `data/prepare_data.py` automatically:
 
 ```shell
 # set the high/low resolution images, bicubic interpolation images path 
@@ -141,7 +139,7 @@ dataset/celebahq_16_128/
 python data/prepare_data.py  --path [dataset root]  --out celebahq --size 16,128 -l
 ```
 
-*Note: Above script can be used whether you have the vinilla high-resolution images or not.*
+*Note: Above script can be used whether you have the vanilla high-resolution images or not.*
 
 then you need to change the dataset config to your data path and image resolution: 
 
@@ -212,7 +210,7 @@ Our work is based on the following theoretical works:
 - [WaveGrad: Estimating Gradients for Waveform Generation](https://arxiv.org/abs/2009.00713)
 - [Large Scale GAN Training for High Fidelity Natural Image Synthesis](https://arxiv.org/abs/1809.11096)
 
-and we are benefit a lot from following projects:
+and we are benefiting a lot from the following projects:
 
 - https://github.com/bhushan23/BIG-GAN
 - https://github.com/lmnt-com/wavegrad
