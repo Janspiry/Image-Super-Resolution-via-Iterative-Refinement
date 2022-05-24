@@ -20,7 +20,7 @@ if __name__ == "__main__":
     for rname, fname in zip(real_names, fake_names):
         idx += 1
         ridx = rname.rsplit("_hr")[0]
-        fidx = rname.rsplit("_hr")[0]
+        fidx = rname.rsplit("_sr")[0]
         assert ridx == fidx, 'Image ridx:{ridx}!=fidx:{fidx}'.format(
             ridx, fidx)
 
