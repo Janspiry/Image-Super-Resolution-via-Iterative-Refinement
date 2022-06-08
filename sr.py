@@ -31,6 +31,7 @@ if __name__ == "__main__":
     # logging
     torch.backends.cudnn.enabled = True
     torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.benchmark = True
 
     Logger.setup_logger(None, opt['path']['log'],
                         'train', level=logging.INFO, screen=True)
