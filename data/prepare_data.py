@@ -12,7 +12,8 @@ from pathlib import Path
 import lmdb
 import numpy as np
 import time
-
+import sys
+import shutil
 
 def resize_and_convert(img, size, resample):
     if(img.size[0] != size):
@@ -98,6 +99,7 @@ def all_threads_inactive(worker_threads):
     return True
 
 def prepare(img_path, out_path, n_worker, sizes=(16, 128), resample=Image.BICUBIC, lmdb_save=False):
+    
     resize_fn = partial(resize_worker, sizes=sizes,
                         resample=resample, lmdb_save=lmdb_save)
     files = [p for p in Path(
@@ -110,7 +112,11 @@ def prepare(img_path, out_path, n_worker, sizes=(16, 128), resample=Image.BICUBI
         os.makedirs('{}/sr_{}_{}'.format(out_path,
                     sizes[0], sizes[1]), exist_ok=True)
     else:
-        env = lmdb.open(out_path, map_size=1024 ** 4, readahead=False)
+        MAP_SIZE = 1024 ** 4
+        free = shutil.disk_usage(out_path).free
+        assert free > MAP_SIZE, 'Not enough space on disk: {} < {}'.format(
+            free, MAP_SIZE)
+        env = lmdb.open(out_path, map_size=MAP_SIZE, readhead=False)
 
     if n_worker > 1:
         # prepare data subsets
@@ -166,7 +172,7 @@ if __name__ == '__main__':
                         default='./dataset/celebahq')
 
     parser.add_argument('--size', type=str, default='64,512')
-    parser.add_argument('--n_worker', type=int, default=3)
+    parser.add_argument('--n_worker', type=int, default=0 if sys.platform == 'win32' else 3)
     parser.add_argument('--resample', type=str, default='bicubic')
     # default save in png format
     parser.add_argument('--lmdb', '-l', action='store_true')
