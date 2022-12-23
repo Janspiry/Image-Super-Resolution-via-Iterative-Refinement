@@ -4,27 +4,27 @@
 
 ## Brief
 
-This is an unofficial implementation of **Image Super-Resolution via Iterative Refinement(SR3)** by **Pytorch**.
+This is an unofficial implementation of **Image Super-Resolution via Iterative Refinement(SR3)** by **PyTorch**.
 
-There are some implement details with paper description, which may be different from the actual `SR3` structure due to details missing.
+There are some implementation details that may vary from the paper's description, which may be different from the actual `SR3` structure due to details missing. Specifically, we:
 
-- We used the ResNet block and channel concatenation style like vanilla `DDPM`.
-- We used the attention mechanism in low-resolution features(16×16) like vanilla `DDPM`.
-- We encode the $\gamma$ as `FilM` structure did in `WaveGrad`, and embed it without affine transformation.
-- We define posterior variance as $ \dfrac{1-\gamma_{t-1}}{1-\gamma_{t}}  \beta_t $  rather than $\beta_t$,  which have the similar results in vanilla paper.
+- Used the ResNet block and channel concatenation style like vanilla `DDPM`.
+- Used the attention mechanism in low-resolution features ($16 \times 16$) like vanilla `DDPM`.
+- Encode the $\gamma$ as `FilM` structure did in `WaveGrad`, and embed it without affine transformation.
+- Define the posterior variance as $\dfrac{1-\gamma_{t-1}}{1-\gamma_{t}} \beta_t$  rather than $\beta_t$,  which gives similar results to the vanilla paper.
 
-**If you just want to upscale `64x64px` -> `512x512px` images using the pre-trained model, check out [this google colab script](https://colab.research.google.com/drive/1G1txPI1GKueKH0cSi_DgQFKwfyJOXlhY?usp=sharing).**
+**If you just want to upscale $(64 \times 64)\text{px} \rightarrow (512 \times 512)\text{px}$ images using the pre-trained model, check out [this google colab script](https://colab.research.google.com/drive/1G1txPI1GKueKH0cSi_DgQFKwfyJOXlhY?usp=sharing).**
 
 ## Status
 
-**★★★ NEW: Its follow-up [Palette-Image-to-Image-Diffusion-Models](https://arxiv.org/abs/2111.05826) is now available; See the details [here](https://github.com/Janspiry/Palette-Image-to-Image-Diffusion-Models) ★★★**
+**★★★ NEW: The follow-up [Palette-Image-to-Image-Diffusion-Models](https://arxiv.org/abs/2111.05826) is now available; See the details [here](https://github.com/Janspiry/Palette-Image-to-Image-Diffusion-Models) ★★★**
 
-### Conditional generation(super resolution)
+### Conditional Generation (with Super Resolution)
 
 - [x] 16×16 -> 128×128 on FFHQ-CelebaHQ
 - [x] 64×64 -> 512×512 on FFHQ-CelebaHQ
 
-### Unconditional generation
+### Unconditional Generation
 
 - [x] 128×128 face generation on FFHQ
 - [ ] ~~1024×1024 face generation by a cascade of 3 models~~
@@ -42,7 +42,7 @@ There are some implement details with paper description, which may be different 
 
 ## Results
 
-*Note:*  We set the maximum reverse steps budget to 2000 now. Limited to model parameters in `Nvidia 1080Ti`, **image noise** and **hue deviation** occasionally appear in high-resolution images, resulting in low scores.  There is a lot of room to optimization.  **Welcome to any contributions for more extensive experiments and code enhancements.**
+*Note:*  We set the maximum reverse steps budget to $2000$. We limited the model parameters in `Nvidia 1080Ti`, **image noise** and **hue deviation** occasionally appear in high-resolution images, resulting in low scores.  There is a lot of room for optimization.  **We are welcome to any contributions for more extensive experiments and code enhancements.**
 
 | Tasks/Metrics        | SSIM(+) | PSNR(+) | FID(-)  | IS(+)   |
 | -------------------- | ----------- | -------- | ---- | ---- |
@@ -77,7 +77,7 @@ pip install -r requirement.txt
 
 ### Pretrained Model
 
-This paper is based on "Denoising Diffusion Probabilistic Models", and we build both DDPM/SR3 network structures, which use timesteps/gama as model embedding input, respectively. In our experiments, SR3 model can achieve better visual results with the same reverse steps and learning rate. You can select the JSON files with annotated suffix names to train the different models.
+This paper is based on "Denoising Diffusion Probabilistic Models", and we build both DDPM/SR3 network structures, which use timesteps/gamma as model embedding inputs, respectively. In our experiments, the SR3 model can achieve better visual results with the same reverse steps and learning rate. You can select the JSON files with annotated suffix names to train the different models.
 
 | Tasks                             | Platform（Code：qwer)                                        | 
 | --------------------------------- | ------------------------------------------------------------ |
@@ -86,8 +86,8 @@ This paper is based on "Denoising Diffusion Probabilistic Models", and we build 
 | 128×128 face generation on FFHQ   | [Google Drive](https://drive.google.com/drive/folders/1ldukMgLKAxE7qiKdFJlu-qubGlnW-982?usp=sharing)\|[Baidu Yun](https://pan.baidu.com/s/1Vsd08P1A-48OGmnRV0E7Fg ) | 
 
 ```python
-# Download the pretrain model and edit [sr|sample]_[ddpm|sr3]_[resolution option].json about "resume_state":
-"resume_state": [your pretrain model path]
+# Download the pretrained model and edit [sr|sample]_[ddpm|sr3]_[resolution option].json about "resume_state":
+"resume_state": [your pretrained model's path]
 ```
 
 ### Data Prepare
@@ -194,7 +194,7 @@ pip install wandb
 wandb login
 ```
 
-W&B logging functionality is added to `sr.py`, `sample.py` and `infer.py` files. You can pass `-enable_wandb` to start logging.
+W&B logging functionality is added to the `sr.py`, `sample.py` and `infer.py` files. You can pass `-enable_wandb` to start logging.
 
 - `-log_wandb_ckpt`: Pass this argument along with `-enable_wandb` to save model checkpoints as [W&B Artifacts](https://docs.wandb.ai/guides/artifacts). Both `sr.py` and `sample.py` is enabled with model checkpointing. 
 - `-log_eval`: Pass this argument along with `-enable_wandb` to save the evaluation result as interactive [W&B Tables](https://docs.wandb.ai/guides/data-vis). Note that only `sr.py` is enabled with this feature. If you run `sample.py` in eval mode, the generated images will automatically be logged as image media panel. 
@@ -203,7 +203,7 @@ W&B logging functionality is added to `sr.py`, `sample.py` and `infer.py` files.
 You can find more on using these features [here](https://github.com/Janspiry/Image-Super-Resolution-via-Iterative-Refinement/pull/44). 🚀
 
 
-## Acknowledge
+## Acknowledgements
 
 Our work is based on the following theoretical works:
 
@@ -212,13 +212,10 @@ Our work is based on the following theoretical works:
 - [WaveGrad: Estimating Gradients for Waveform Generation](https://arxiv.org/abs/2009.00713)
 - [Large Scale GAN Training for High Fidelity Natural Image Synthesis](https://arxiv.org/abs/1809.11096)
 
-and we are benefiting a lot from the following projects:
+Furthermore, we are benefitting a lot from the following projects:
 
 - https://github.com/bhushan23/BIG-GAN
 - https://github.com/lmnt-com/wavegrad
 - https://github.com/rosinality/denoising-diffusion-pytorch
 - https://github.com/lucidrains/denoising-diffusion-pytorch
 - https://github.com/hejingwenhejingwen/AdaFM
-
-
-
