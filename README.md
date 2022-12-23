@@ -9,7 +9,7 @@ This is an unofficial implementation of **Image Super-Resolution via Iterative R
 There are some implementation details that may vary from the paper's description, which may be different from the actual `SR3` structure due to details missing. Specifically, we:
 
 - Used the ResNet block and channel concatenation style like vanilla `DDPM`.
-- Used the attention mechanism in low-resolution features ($16 \times 16$) like vanilla `DDPM`.
+- Used the attention mechanism in low-resolution features ( $16 \times 16$ ) like vanilla `DDPM`.
 - Encode the $\gamma$ as `FilM` structure did in `WaveGrad`, and embed it without affine transformation.
 - Define the posterior variance as $\dfrac{1-\gamma_{t-1}}{1-\gamma_{t}} \beta_t$  rather than $\beta_t$,  which gives similar results to the vanilla paper.
 
