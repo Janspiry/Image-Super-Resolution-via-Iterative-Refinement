@@ -73,11 +73,48 @@ def transform2tensor(img, min_max=(0, 1)):
 # implementation by torchvision, detail in https://github.com/Janspiry/Image-Super-Resolution-via-Iterative-Refinement/issues/14
 totensor = torchvision.transforms.ToTensor()
 hflip = torchvision.transforms.RandomHorizontalFlip()
-def transform_augment(img_list, split='val', min_max=(0, 1)):    
-    imgs = [totensor(img) for img in img_list]
+def transform_augment(img_list, split='val', min_max=(0, 1), multi_s2=False, consistent_sizing=True):    
+
+    # Sorta hacky edge case for when we have >1 S2 chunk. Expects S2 list to be first in img_list.
+    imgs = []
+    s2_len, other_len = 0, 0
+    if multi_s2:
+        s2_imgs = [totensor(img) for img in img_list[0]]
+        s2_len = len(s2_imgs)
+        other = [totensor(img) for img in img_list[1:]]
+        other_len = len(other)
+        imgs = s2_imgs + other
+    else:
+        imgs = [totensor(img) for img in img_list]
+
+    # Added code to crop to 256x256, since some of the bedroom and church images are non-standard.
+    # Only need this for LSUN experiments. Or other non-standard-sized datasets.
+    if not consistent_sizing:
+        if multi_s2:
+            print("WARNING: consistent_sizing not implemented for S2 time series yet...")
+        new_imgs = []
+        for im in imgs:
+            if not (im.shape[1] == 256 and im.shape[2] == 256):
+                im = im[:, :256, :256]
+            new_imgs.append(im[:, :256, :256])
+        imgs = new_imgs
+
+    # Apply flip augmentation to train data.
     if split == 'train':
         imgs = torch.stack(imgs, 0)
         imgs = hflip(imgs)
         imgs = torch.unbind(imgs, dim=0)
+
     ret_img = [img * (min_max[1] - min_max[0]) + min_max[0] for img in imgs]
+
+    if multi_s2:
+        new_ret_img = []
+        s2_chunks = [i for i in ret_img[:s2_len]]
+
+        if other_len == 1:
+            new_ret_img = [s2_chunks, ret_img[s2_len]]
+        elif other_len == 2:
+            new_ret_img = [s2_chunks, ret_img[s2_len], ret_img[s2_len+1]]
+        ret_img = new_ret_img
+
     return ret_img
