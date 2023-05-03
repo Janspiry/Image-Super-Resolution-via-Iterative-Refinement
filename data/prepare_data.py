@@ -45,6 +45,7 @@ def resize_worker(img_file, sizes, resample, lmdb_save=False):
     out = resize_multiple(
         img, sizes=sizes, resample=resample, lmdb_save=lmdb_save)
 
+    #return img_file, out
     return img_file.name.split('.')[0], out
 
 class WorkingContext():
@@ -69,14 +70,32 @@ class WorkingContext():
 
 def prepare_process_worker(wctx, file_subset):
     for file in file_subset:
+        #if os.path.isdir(file):
+        #    print("DIR...skipping")
+        #    continue
         i, imgs = wctx.resize_fn(file)
+
+        # If working with custom NAIP imagery, we want to deal with paths a little differently.
+        # ex NAIP path: /data/s2_naip_pairs/naip/m_4011706_ne_11_060_20190830/tci/22840_49160.png 
+        # If working with LSUN or other standard datasets, revert to original lines.
+        #naip_path = str(i).split('/')
+        #i = naip_path[4] + '_' + naip_path[6]
+        #i = i[:-4]
+
+        if os.path.exists('{}/lr_{}/{}.png'.format(wctx.out_path, wctx.sizes[0], i)):
+            print("already exists, skipping")
+            continue
+
         lr_img, hr_img, sr_img = imgs
         if not wctx.lmdb_save:
             lr_img.save(
+                #'{}/lr_{}/{}.png'.format(wctx.out_path, wctx.sizes[0], i))
                 '{}/lr_{}/{}.png'.format(wctx.out_path, wctx.sizes[0], i.zfill(5)))
             hr_img.save(
+                #'{}/hr_{}/{}.png'.format(wctx.out_path, wctx.sizes[1], i))
                 '{}/hr_{}/{}.png'.format(wctx.out_path, wctx.sizes[1], i.zfill(5)))
             sr_img.save(
+                #'{}/sr_{}_{}/{}.png'.format(wctx.out_path, wctx.sizes[0], wctx.sizes[1], i))
                 '{}/sr_{}_{}/{}.png'.format(wctx.out_path, wctx.sizes[0], wctx.sizes[1], i.zfill(5)))
         else:
             with wctx.env.begin(write=True) as txn:

@@ -4,27 +4,70 @@ from PIL import Image
 from torch.utils.data import Dataset
 import random
 import data.util as Util
+import skimage.io
+import os
+import cv2
+import json
+import glob
+import numpy as np
+import torch
+from torchvision.transforms import functional as trans_fn
 
 
 class LRHRDataset(Dataset):
-    def __init__(self, dataroot, datatype, l_resolution=16, r_resolution=128, split='train', data_len=-1, need_LR=False):
+    def __init__(self, dataroot, datatype, l_resolution=16, r_resolution=128, split='train', data_len=-1, need_LR=False,
+                    n_s2_images=-1, downsample_res=-1):
         self.datatype = datatype
         self.l_res = l_resolution
         self.r_res = r_resolution
         self.data_len = data_len
         self.need_LR = need_LR
         self.split = split
+        self.n_s2_images = n_s2_images
+        self.downsample_res = downsample_res
 
-        if datatype == 'lmdb':
-            self.env = lmdb.open(dataroot, readonly=True, lock=False,
-                                 readahead=False, meminit=False)
-            # init the datalen
-            with self.env.begin(write=False) as txn:
-                self.dataset_len = int(txn.get("length".encode("utf-8")))
-            if self.data_len <= 0:
-                self.data_len = self.dataset_len
-            else:
-                self.data_len = min(self.data_len, self.dataset_len)
+        # Conditioning on S2.
+        if datatype == 's2' or datatype == 's2_and_downsampled_naip':
+            self.s2_path = '/data/first_ten_million/s2/'
+            self.naip_path = '/data/first_ten_million/naip/'
+
+            # Open the metadata file that contains naip_chip:s2_tiles mappings.
+            meta_file = open('/data/first_ten_million/metadata/naip_to_s2.json')
+            self.meta = json.load(meta_file)
+            self.naip_chips = list(self.meta.keys())
+
+            # Using the metadata, create list of [naip_path, [s2_paths]] sets.
+            self.datapoints = []
+            for k,v in self.meta.items():
+                naip_name, naip_chip = k[:-12], k[-11:]
+                naip_path = os.path.join(self.naip_path, naip_name, 'tci', naip_chip+'.png')
+
+                s2_list = [os.path.join(self.s2_path, x[0], 'tci', x[1]+'.png') for x in v]
+                s2_paths = random.sample(s2_list, self.n_s2_images)
+
+                self.datapoints.append([naip_path, s2_paths])
+
+            self.data_len = len(self.datapoints)
+            print("number of naip chips:", self.data_len, " & len(meta):", len(self.meta))
+        
+        # NAIP reconstruction, build downsampled version on-the-fly.
+        elif datatype == 'naip':
+            self.naip_path = '/data/first_ten_million/naip/'
+
+            # Open the metadata file that contains naip_chip:s2_tiles mappings.
+            meta_file = open('/data/first_ten_million/metadata/naip_to_s2.json')
+            self.meta = json.load(meta_file)
+            self.naip_chips = list(self.meta.keys())
+
+            # Build list of NAIP chip paths.
+            self.datapoints = []
+            for k,v in self.meta.items():
+                naip_name, naip_chip = k[:-12], k[-11:]
+                naip_path = os.path.join(self.naip_path, naip_name, 'tci', naip_chip+'.png')
+
+                self.datapoints.append(naip_path)
+            self.data_len = len(self.datapoints)
+
         elif datatype == 'img':
             self.sr_path = Util.get_paths_from_images(
                 '{}/sr_{}_{}'.format(dataroot, l_resolution, r_resolution))
@@ -49,46 +92,89 @@ class LRHRDataset(Dataset):
         img_HR = None
         img_LR = None
 
-        if self.datatype == 'lmdb':
-            with self.env.begin(write=False) as txn:
-                hr_img_bytes = txn.get(
-                    'hr_{}_{}'.format(
-                        self.r_res, str(index).zfill(5)).encode('utf-8')
-                )
-                sr_img_bytes = txn.get(
-                    'sr_{}_{}_{}'.format(
-                        self.l_res, self.r_res, str(index).zfill(5)).encode('utf-8')
-                )
-                if self.need_LR:
-                    lr_img_bytes = txn.get(
-                        'lr_{}_{}'.format(
-                            self.l_res, str(index).zfill(5)).encode('utf-8')
-                    )
-                # skip the invalid index
-                while (hr_img_bytes is None) or (sr_img_bytes is None):
-                    new_index = random.randint(0, self.data_len-1)
-                    hr_img_bytes = txn.get(
-                        'hr_{}_{}'.format(
-                            self.r_res, str(new_index).zfill(5)).encode('utf-8')
-                    )
-                    sr_img_bytes = txn.get(
-                        'sr_{}_{}_{}'.format(
-                            self.l_res, self.r_res, str(new_index).zfill(5)).encode('utf-8')
-                    )
-                    if self.need_LR:
-                        lr_img_bytes = txn.get(
-                            'lr_{}_{}'.format(
-                                self.l_res, str(new_index).zfill(5)).encode('utf-8')
-                        )
-                img_HR = Image.open(BytesIO(hr_img_bytes)).convert("RGB")
-                img_SR = Image.open(BytesIO(sr_img_bytes)).convert("RGB")
-                if self.need_LR:
-                    img_LR = Image.open(BytesIO(lr_img_bytes)).convert("RGB")
+        # Conditioning on S2, or S2 and downsampled NAIP.
+        if self.datatype == 's2' or self.datatype == 's2_and_downsampled_naip':
+            datapoint = self.datapoints[index]
+            naip_path, s2_paths = datapoint[0], datapoint[1]
+
+            # Load the 512x512 NAIP chip.
+            naip_chip = skimage.io.imread(naip_path)
+
+	    # Extract components from the NAIP chip filepath.
+            split = naip_path.split('/')
+            chip = split[-1][:-4]
+            tile = int(chip.split('_')[0]) // 16, int(chip.split('_')[1]) // 16  # s2 tile that contains the naip chip
+
+            # For each S2 tile, we want to read in the image then find and extract the 32x32 chunk corresponding to NAIP chip.
+            s2_chunks = []
+            for s2_path in s2_paths:
+                s2_img = skimage.io.imread(s2_path)
+                
+                s2_left_corner = tile[0] * 16, tile[1] * 16
+                diffs = int(chip.split('_')[0]) - s2_left_corner[0], int(chip.split('_')[1]) - s2_left_corner[1]
+                s2_chunk = s2_img[diffs[1]*32 : (diffs[1]+1)*32, diffs[0]*32 : (diffs[0]+1)*32, :]
+
+                s2_chunk = torch.permute(torch.from_numpy(s2_chunk), (2, 0, 1))
+                s2_chunk = trans_fn.resize(s2_chunk, 512, Image.BICUBIC)
+                s2_chunk = trans_fn.center_crop(s2_chunk, 512)
+                s2_chunk = torch.permute(s2_chunk, (1, 2, 0)).numpy()
+                s2_chunks.append(s2_chunk)
+
+            # If conditioning on downsampled naip (along with S2), need to downsample original NAIP datapoint and upsample
+            # it to get it to the size of the other inputs.
+            if self.datatype == 's2_and_downsampled_naip':
+                downsampled_naip = cv2.resize(naip_chip, dsize=(self.downsample_res,self.downsample_res), interpolation=cv2.INTER_CUBIC)
+                downsampled_naip = cv2.resize(downsampled_naip, dsize=(512,512), interpolation=cv2.INTER_CUBIC)
+
+                if len(s2_chunks) == 1:
+                    s2_chunk = s2_chunks[0]
+
+                    [s2_chunk, downsampled_naip, naip_chip] = Util.transform_augment(
+                                                   [s2_chunk, downsampled_naip, naip_chip], split=self.split, min_max=(-1, 1))
+                    img_SR = torch.cat((s2_chunk, downsampled_naip))
+                    img_HR = naip_chip
+                else:
+                    print("TO BE IMPLEMENTED")
+                    [s2_chunks, downsampled_naip, naip_chip] = Util.transform_augment(
+                                                    [s2_chunks, downsampled_naip, naip_chip], split=self.split, min_max=(-1, 1), multi_s2=True)
+                    img_SR = torch.cat((torch.stack(s2_chunks), downsampled_naip))
+                    img_HR = naip_chip
+
+            elif self.datatype == 's2':
+
+                if len(s2_chunks) == 1:
+                    s2_chunk = s2_chunks[0]
+
+                    [img_SR, img_HR] = Util.transform_augment(
+				    [s2_chunk, naip_chip], split=self.split, min_max=(-1, 1))
+                else:
+                    [s2_chunks, img_HR] = Util.transform_augment(
+                                    [s2_chunks, naip_chip], split=self.split, min_max=(-1, 1), multi_s2=True)
+
+                    img_SR = torch.cat(s2_chunks)
+
+            return {'HR': img_HR, 'SR': img_SR, 'Index': index}
+
+        elif self.datatype == 'naip':
+            naip_path = self.datapoints[index]
+
+            # Load the 512x512 NAIP chip.
+            naip_chip = skimage.io.imread(naip_path)
+
+            # Create the downsampled version on-the-fly.
+            downsampled_naip = cv2.resize(naip_chip, dsize=(self.downsample_res,self.downsample_res), interpolation=cv2.INTER_CUBIC)
+            downsampled_naip = cv2.resize(downsampled_naip, dsize=(512,512), interpolation=cv2.INTER_CUBIC)
+
+            [img_SR, img_HR] = Util.transform_augment([downsampled_naip, naip_chip], split=self.split, min_max=(-1, 1))
+
+            return {'HR': img_HR, 'SR': img_SR, 'Index': index}
+
         else:
             img_HR = Image.open(self.hr_path[index]).convert("RGB")
             img_SR = Image.open(self.sr_path[index]).convert("RGB")
             if self.need_LR:
                 img_LR = Image.open(self.lr_path[index]).convert("RGB")
+
         if self.need_LR:
             [img_LR, img_SR, img_HR] = Util.transform_augment(
                 [img_LR, img_SR, img_HR], split=self.split, min_max=(-1, 1))
