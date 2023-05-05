@@ -1,7 +1,6 @@
 appdirs==1.4.4
 beaker-gantry==0.14.1
 beaker-py==1.18.4
-certifi @ file:///croot/certifi_1671487769961/work/certifi
 charset-normalizer==3.1.0
 click==8.1.3
 click-help-colors==0.9.1
