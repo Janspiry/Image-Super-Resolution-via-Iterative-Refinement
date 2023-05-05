@@ -60,6 +60,7 @@ dependencies:
       - nvidia-nccl-cu11==2.14.3
       - nvidia-nvtx-cu11==11.7.91
       - opencv-contrib-python==4.7.0.72
+      - opencv-python==4.7.0.72
       - packaging==23.0
       - pandas==2.0.0
       - pathtools==0.1.2
