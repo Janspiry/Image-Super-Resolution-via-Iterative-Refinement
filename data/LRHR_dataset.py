@@ -56,6 +56,7 @@ class LRHRDataset(Dataset):
 
             import os
             print("PWD:", os.getcwd())
+            print("os walk:", os.walk('.'))
 
             # Open the metadata file that contains naip_chip:s2_tiles mappings.
             meta_file = open('/data/piperw/first_ten_million/metadata/naip_to_s2.json')
