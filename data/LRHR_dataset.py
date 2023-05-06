@@ -52,10 +52,10 @@ class LRHRDataset(Dataset):
         
         # NAIP reconstruction, build downsampled version on-the-fly.
         elif datatype == 'naip':
-            self.naip_path = '/data/first_ten_million/naip/'
+            self.naip_path = '/data/piperw/first_ten_million/naip/'
 
             # Open the metadata file that contains naip_chip:s2_tiles mappings.
-            meta_file = open('/data/first_ten_million/metadata/naip_to_s2.json')
+            meta_file = open('/data/piperw/first_ten_million/metadata/naip_to_s2.json')
             self.meta = json.load(meta_file)
             self.naip_chips = list(self.meta.keys())
 

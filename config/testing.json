@@ -1,5 +1,5 @@
 {
-    "name": "testing_naip_4",
+    "name": "naip__reconstrcution_8",
     "phase": "train", // train or val
     "gpu_ids": [
         7
@@ -22,7 +22,7 @@
             "num_workers": 8,
             "use_shuffle": true,
             "data_len": -1, // -1 represents all data used in train
-	    "downsample_res": 64  //if using downsampled naip, what is the downsampled resolution
+	    "downsample_res": 8  //if using downsampled naip, what is the downsampled resolution
         },
         "val": {
             "name": "S2-NAIP",
@@ -30,7 +30,7 @@
             "dataroot": "/data/first_ten_million/",
             "datatype": "naip", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
             "data_len": 10, // data length in validation 
-	    "downsample_res": 64  //if using downsampled naip, what is the downsampled resolution
+	    "downsample_res": 8  //if using downsampled naip, what is the downsampled resolution
         }
     },
     "model": {
@@ -75,9 +75,9 @@
     },
     "train": {
         "n_iter": 1000000,
-        "val_freq": 10,
-        "save_checkpoint_freq": 10,
-        "print_freq": 10,
+        "val_freq": 1e4,
+        "save_checkpoint_freq": 1e4,
+        "print_freq": 1000,
         "optimizer": {
             "type": "adam",
             "lr": 1e-4
