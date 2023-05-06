@@ -54,6 +54,9 @@ class LRHRDataset(Dataset):
         elif datatype == 'naip':
             self.naip_path = '/data/piperw/first_ten_million/naip/'
 
+            import os
+            print("PWD:", os.getcwd())
+
             # Open the metadata file that contains naip_chip:s2_tiles mappings.
             meta_file = open('/data/piperw/first_ten_million/metadata/naip_to_s2.json')
             self.meta = json.load(meta_file)
