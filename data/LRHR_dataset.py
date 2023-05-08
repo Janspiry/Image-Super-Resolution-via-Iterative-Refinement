@@ -28,11 +28,11 @@ class LRHRDataset(Dataset):
 
         # Conditioning on S2.
         if datatype == 's2' or datatype == 's2_and_downsampled_naip':
-            self.s2_path = '/gantry-runtime/data/piperw/first_ten_million/s2/'
-            self.naip_path = '/gantry-runtime/data/piperw/first_ten_million/naip/'
+            self.s2_path = '/data/piperw/first_ten_million/s2/'
+            self.naip_path = '/data/piperw/first_ten_million/naip/'
 
             # Open the metadata file that contains naip_chip:s2_tiles mappings.
-            meta_file = open('/gantry-runtime/data/piperw/first_ten_million/metadata/naip_to_s2.json')
+            meta_file = open('/data/piperw/first_ten_million/metadata/naip_to_s2.json')
             self.meta = json.load(meta_file)
             self.naip_chips = list(self.meta.keys())
 
@@ -52,14 +52,10 @@ class LRHRDataset(Dataset):
         
         # NAIP reconstruction, build downsampled version on-the-fly.
         elif datatype == 'naip':
-            self.naip_path = '/gantry-runtime/data/piperw/first_ten_million/naip/'
-
-            import os
-            print("PWD:", os.getcwd())
-            print("os walk:", os.walk('.'))
+            self.naip_path = '/data/piperw/first_ten_million/naip/'
 
             # Open the metadata file that contains naip_chip:s2_tiles mappings.
-            meta_file = open('/gantry-runtime/data/piperw/first_ten_million/metadata/naip_to_s2.json')
+            meta_file = open('/data/piperw/first_ten_million/metadata/naip_to_s2.json')
             self.meta = json.load(meta_file)
             self.naip_chips = list(self.meta.keys())
 
