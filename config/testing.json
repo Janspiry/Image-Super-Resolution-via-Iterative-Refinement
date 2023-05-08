@@ -1,9 +1,6 @@
 {
     "name": "naip__reconstrcution_8",
     "phase": "train", // train or val
-    "gpu_ids": [
-        7
-    ],
     "path": { //set the path
         "log": "logs",
         "tb_logger": "tb_logger",
