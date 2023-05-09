@@ -1,8 +1,8 @@
 {
-    "name": "naip__reconstrcution_8",
+    "name": "naip__reconstrcution_16",
     "phase": "train", // train or val
     "gpu_ids": [
-        0
+        0, 1, 2, 3
     ],
     "path": { //set the path
         "log": "logs",
@@ -22,7 +22,7 @@
             "num_workers": 8,
             "use_shuffle": true,
             "data_len": -1, // -1 represents all data used in train
-	    "downsample_res": 8  //if using downsampled naip, what is the downsampled resolution
+	    "downsample_res": 16  //if using downsampled naip, what is the downsampled resolution
         },
         "val": {
             "name": "S2-NAIP",
@@ -30,7 +30,7 @@
             "dataroot": "/data/first_ten_million/",
             "datatype": "naip", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
             "data_len": 10, // data length in validation 
-	    "downsample_res": 8  //if using downsampled naip, what is the downsampled resolution
+	    "downsample_res": 16  //if using downsampled naip, what is the downsampled resolution
         }
     },
     "model": {
