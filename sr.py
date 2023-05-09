@@ -72,6 +72,10 @@ if __name__ == "__main__":
     current_epoch = diffusion.begin_epoch
     n_iter = opt['train']['n_iter']
 
+    # Val
+    val_data_len = opt['datasets']['validation']['data_len']
+    print("val data len:", val_data_len)
+
     if opt['path']['resume_state']:
         logger.info('Resuming training from epoch: {}, iter: {}.'.format(
             current_epoch, current_step))
@@ -107,6 +111,7 @@ if __name__ == "__main__":
                     result_path = '{}/{}'.format(opt['path']
                                                  ['results'], current_epoch)
                     os.makedirs(result_path, exist_ok=True)
+                    print("result path:", result_path)
 
                     diffusion.set_new_noise_schedule(
                         opt['model']['beta_schedule']['val'], schedule_phase='val')
@@ -115,7 +120,7 @@ if __name__ == "__main__":
                     for _,  val_data in enumerate(val_loader):
 
                         # Added code here to manually break out of val_loader after X samples have been generated.
-                        if val_count >= 5:
+                        if val_count >= val_data_len:
                             break
 
                         idx += 1
