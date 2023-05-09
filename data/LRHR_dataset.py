@@ -26,15 +26,20 @@ class LRHRDataset(Dataset):
         self.n_s2_images = n_s2_images
         self.downsample_res = downsample_res
 
+        # Paths to the imagery.
+        self.s2_path = os.path.join(dataroot, 's2')
+        self.naip_path = os.path.join(dataroot, 'naip')
+
+	# Open the metadata file that contains naip_chip:s2_tiles mappings.
+	meta_fp = os.path.join(dataroot, 'metadata/naip_to_s2.json')
+	meta_file = open(meta_fp)
+	self.meta = json.load(meta_file)
+	self.naip_chips = list(self.meta.keys())
+
+        print("s2 path:", self.s2_path, " naip:", self.naip_path, " meta fp:", meta_fp)
+
         # Conditioning on S2.
         if datatype == 's2' or datatype == 's2_and_downsampled_naip':
-            self.s2_path = '/data/piperw/first_ten_million/s2/'
-            self.naip_path = '/data/piperw/first_ten_million/naip/'
-
-            # Open the metadata file that contains naip_chip:s2_tiles mappings.
-            meta_file = open('/data/piperw/first_ten_million/metadata/naip_to_s2.json')
-            self.meta = json.load(meta_file)
-            self.naip_chips = list(self.meta.keys())
 
             # Using the metadata, create list of [naip_path, [s2_paths]] sets.
             self.datapoints = []
@@ -48,16 +53,9 @@ class LRHRDataset(Dataset):
                 self.datapoints.append([naip_path, s2_paths])
 
             self.data_len = len(self.datapoints)
-            print("number of naip chips:", self.data_len, " & len(meta):", len(self.meta))
         
         # NAIP reconstruction, build downsampled version on-the-fly.
         elif datatype == 'naip':
-            self.naip_path = '/data/piperw/first_ten_million/naip/'
-
-            # Open the metadata file that contains naip_chip:s2_tiles mappings.
-            meta_file = open('/data/piperw/first_ten_million/metadata/naip_to_s2.json')
-            self.meta = json.load(meta_file)
-            self.naip_chips = list(self.meta.keys())
 
             # Build list of NAIP chip paths.
             self.datapoints = []
@@ -84,6 +82,8 @@ class LRHRDataset(Dataset):
         else:
             raise NotImplementedError(
                 'data_type [{:s}] is not recognized.'.format(datatype))
+
+        print("Data length:", self.data_len)
 
     def __len__(self):
         return self.data_len
