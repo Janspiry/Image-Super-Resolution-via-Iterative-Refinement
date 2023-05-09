@@ -73,7 +73,7 @@ if __name__ == "__main__":
     n_iter = opt['train']['n_iter']
 
     # Val
-    val_data_len = opt['datasets']['val']['data_len']
+    val_data_len = 10 #opt['datasets']['val']['data_len']
     print("val data len:", val_data_len)
 
     if opt['path']['resume_state']:
