@@ -31,10 +31,10 @@ class LRHRDataset(Dataset):
         self.naip_path = os.path.join(dataroot, 'naip')
 
 	# Open the metadata file that contains naip_chip:s2_tiles mappings.
-	meta_fp = os.path.join(dataroot, 'metadata/naip_to_s2.json')
-	meta_file = open(meta_fp)
-	self.meta = json.load(meta_file)
-	self.naip_chips = list(self.meta.keys())
+        meta_fp = os.path.join(dataroot, 'metadata/naip_to_s2.json')
+        meta_file = open(meta_fp)
+        self.meta = json.load(meta_file)
+        self.naip_chips = list(self.meta.keys())
 
         print("s2 path:", self.s2_path, " naip:", self.naip_path, " meta fp:", meta_fp)
 
