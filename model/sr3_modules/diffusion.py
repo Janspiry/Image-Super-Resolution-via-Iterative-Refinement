@@ -241,8 +241,13 @@ class GaussianDiffusion(nn.Module):
         if not self.conditional:
             x_recon = self.denoise_fn(x_noisy, continuous_sqrt_alpha_cumprod)
         else:
-            x_recon = self.denoise_fn(
-                torch.cat([x_in['SR'], x_noisy], dim=1), continuous_sqrt_alpha_cumprod)
+            use_3d = False
+            if use_3d:
+                x_recon = self.denoise_fn(
+                    torch.cat([x_in['SR'], x_noisy.unsqueeze(0)], dim=1), continuous_sqrt_alpha_cumprod)
+            else:
+                x_recon = self.denoise_fn(
+                    torch.cat([x_in['SR'], x_noisy], dim=1), continuous_sqrt_alpha_cumprod)
 
         loss = self.loss_func(noise, x_recon)
         return loss

@@ -66,6 +66,7 @@ class DDPM(BaseModel):
             else:
                 self.SR = self.netG.super_resolution(
                     self.data['SR'], continous)
+            print("self.SR in test shape:", self.SR.shape)
         self.netG.train()
 
     def sample(self, batch_size=1, continous=False):
@@ -140,6 +141,12 @@ class DDPM(BaseModel):
             self.opt['path']['checkpoint'], 'I{}_E{}_gen.pth'.format(iter_step, epoch))
         opt_path = os.path.join(
             self.opt['path']['checkpoint'], 'I{}_E{}_opt.pth'.format(iter_step, epoch))
+
+        # Also save to "last_gen.pth" and "last_opt.pth" for Beaker's sake.
+        # Will overwrite each checkpoint cycle.
+        last_gen_path = os.path.join(self.opt['path']['checkpoint'], 'last_gen.pth')
+        last_opt_path = os.path.join(self.opt['path']['checkpoint'], 'last_opt.pth')
+
         # gen
         network = self.netG
         if isinstance(self.netG, nn.DataParallel):
@@ -148,33 +155,65 @@ class DDPM(BaseModel):
         for key, param in state_dict.items():
             state_dict[key] = param.cpu()
         torch.save(state_dict, gen_path)
+        torch.save(state_dict, last_gen_path)
+
         # opt
         opt_state = {'epoch': epoch, 'iter': iter_step,
                      'scheduler': None, 'optimizer': None}
         opt_state['optimizer'] = self.optG.state_dict()
         torch.save(opt_state, opt_path)
+        torch.save(opt_state, last_opt_path)
 
         logger.info(
             'Saved model in [{:s}] ...'.format(gen_path))
 
     def load_network(self):
+        print("LOADING NETWORK...")
+
+        # For resuming state as the original code does:
         load_path = self.opt['path']['resume_state']
+        print("load path:", load_path)
         if load_path is not None:
             logger.info(
                 'Loading pretrained model for G [{:s}] ...'.format(load_path))
             gen_path = '{}_gen.pth'.format(load_path)
             opt_path = '{}_opt.pth'.format(load_path)
+            print("loading in:", gen_path, " and ", opt_path) 
             # gen
             network = self.netG
             if isinstance(self.netG, nn.DataParallel):
                 network = network.module
             network.load_state_dict(torch.load(
                 gen_path), strict=(not self.opt['model']['finetune_norm']))
-            # network.load_state_dict(torch.load(
-            #     gen_path), strict=False)
             if self.opt['phase'] == 'train':
                 # optimizer
                 opt = torch.load(opt_path)
                 self.optG.load_state_dict(opt['optimizer'])
                 self.begin_step = opt['iter']
                 self.begin_epoch = opt['epoch']
+            return
+
+        # For resuming the last gen and opt states; specifically for Beaker scenario.
+        load_gen_path = self.opt['path']['resume_gen_state']
+        load_opt_path = self.opt['path']['resume_opt_state']
+        if load_gen_path is not None and load_opt_path is not None:
+
+            if os.path.exists(load_gen_path):
+                logger.info(
+                    'Loading pretrained model for G [{:s}] ...'.format(load_gen_path))
+
+                # gen
+                network = self.netG
+                if isinstance(self.netG, nn.DataParallel):
+                    network = network.module
+                network.load_state_dict(torch.load(
+                    load_gen_path), strict=(not self.opt['model']['finetune_norm']))
+
+            if os.path.exists(load_opt_path):
+                if self.opt['phase'] == 'train':
+                    # optimizer
+                    opt = torch.load(load_opt_path)
+                    self.optG.load_state_dict(opt['optimizer'])
+                    self.begin_step = opt['iter']
+                    self.begin_epoch = opt['epoch']
+

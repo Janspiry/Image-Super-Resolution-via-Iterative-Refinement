@@ -72,16 +72,17 @@ if __name__ == "__main__":
     current_epoch = diffusion.begin_epoch
     n_iter = opt['train']['n_iter']
 
-    # Val
-    val_data_len = 10 #opt['datasets']['val']['data_len']
-    print("val data len:", val_data_len)
+    # FOR BEAKER: check if there is an existing checkpoint best.pth
+    # If so, load it in, otherwise skip. This will happen "automatically"
+    # if last_gen.pth and last_opt.pth are specified in config.
 
-    if opt['path']['resume_state']:
+    if (opt['path']['resume_gen_state'] and opt['path']['resume_opt_state']) or opt['path']['resume_state']:
         logger.info('Resuming training from epoch: {}, iter: {}.'.format(
             current_epoch, current_step))
 
     diffusion.set_new_noise_schedule(
         opt['model']['beta_schedule'][opt['phase']], schedule_phase=opt['phase'])
+
     if opt['phase'] == 'train':
         while current_step < n_iter:
             current_epoch += 1
@@ -108,8 +109,8 @@ if __name__ == "__main__":
                 if current_step % opt['train']['val_freq'] == 0:
                     avg_psnr = 0.0
                     idx = 0
-                    result_path = '{}/{}'.format(opt['path']
-                                                 ['results'], current_epoch)
+
+                    result_path = '{}/{}'.format(opt['path']['results'], current_epoch)
                     os.makedirs(result_path, exist_ok=True)
                     print("result path:", result_path)
 
@@ -118,9 +119,10 @@ if __name__ == "__main__":
 
                     val_count = 0
                     for _,  val_data in enumerate(val_loader):
+                        print("Val count:", val_count)
 
                         # Added code here to manually break out of val_loader after X samples have been generated.
-                        if val_count >= val_data_len:
+                        if val_count >= 10:
                             break
 
                         idx += 1

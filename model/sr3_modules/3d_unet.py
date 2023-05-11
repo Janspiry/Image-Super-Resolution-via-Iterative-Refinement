@@ -158,7 +158,7 @@ class ResnetBlocWithAttn(nn.Module):
         return x
 
 
-class UNet(nn.Module):
+class UNet_3D(nn.Module):
     def __init__(
         self,
         in_channel=6,
@@ -235,6 +235,8 @@ class UNet(nn.Module):
 
     def forward(self, x, time):
 
+        print("UNET x shape:", x.shape, " and time shape:", time.shape)
+
         t = self.noise_level_mlp(time) if exists(
             self.noise_level_mlp) else None
 
@@ -258,4 +260,5 @@ class UNet(nn.Module):
             else:
                 x = layer(x)
 
+        print("final_conv(x) shape:", self.final_conv(x).shape)
         return self.final_conv(x)

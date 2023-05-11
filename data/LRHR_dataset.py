@@ -16,7 +16,7 @@ from torchvision.transforms import functional as trans_fn
 
 class LRHRDataset(Dataset):
     def __init__(self, dataroot, datatype, l_resolution=16, r_resolution=128, split='train', data_len=-1, need_LR=False,
-                    n_s2_images=-1, downsample_res=-1):
+                    n_s2_images=-1, downsample_res=-1, specify_val=True):
         self.datatype = datatype
         self.l_res = l_resolution
         self.r_res = r_resolution
@@ -30,13 +30,22 @@ class LRHRDataset(Dataset):
         self.s2_path = os.path.join(dataroot, 's2')
         self.naip_path = os.path.join(dataroot, 'naip')
 
+        # Load in the list of naip images that we want to use for val.
+        self.val_fps = []
+        if specify_val:
+            val_fps_f = open('held_out.txt')
+            val_fps = val_fps_f.readlines()
+            for fp in val_fps:
+                fp = fp[:-1]
+                self.val_fps.append(os.path.join(self.naip_path, fp))
+
 	# Open the metadata file that contains naip_chip:s2_tiles mappings.
         meta_fp = os.path.join(dataroot, 'metadata/naip_to_s2.json')
         meta_file = open(meta_fp)
         self.meta = json.load(meta_file)
         self.naip_chips = list(self.meta.keys())
 
-        print("s2 path:", self.s2_path, " naip:", self.naip_path, " meta fp:", meta_fp)
+        print("s2 path:", self.s2_path, " naip:", self.naip_path, " meta fp:", meta_fp, " len(val_fps):", len(self.val_fps))
 
         # Conditioning on S2.
         if datatype == 's2' or datatype == 's2_and_downsampled_naip':
@@ -46,6 +55,13 @@ class LRHRDataset(Dataset):
             for k,v in self.meta.items():
                 naip_name, naip_chip = k[:-12], k[-11:]
                 naip_path = os.path.join(self.naip_path, naip_name, 'tci', naip_chip+'.png')
+
+                # If this is the train dataset, ignore the subset of images that we want to use for validation.
+                if self.split == 'train' and specify_val and (naip_path in self.val_fps):
+                    continue
+                # If this is the validation dataset, ignore any images that aren't in the subset.
+                if self.split == 'val' and specify_val and not (naip_path in self.val_fps):
+                    continue
 
                 s2_list = [os.path.join(self.s2_path, x[0], 'tci', x[1]+'.png') for x in v]
                 s2_paths = random.sample(s2_list, self.n_s2_images)
@@ -62,6 +78,13 @@ class LRHRDataset(Dataset):
             for k,v in self.meta.items():
                 naip_name, naip_chip = k[:-12], k[-11:]
                 naip_path = os.path.join(self.naip_path, naip_name, 'tci', naip_chip+'.png')
+
+                # If this is the train dataset, ignore the subset of images that we want to use for validation.
+                if self.split == 'train' and self.specify_val and (naip_path in self.val_fps):
+                    continue
+                # If this is the validation dataset, ignore any images that aren't in the subset.
+                if self.split == 'val' and self.specify_val and not (naip_path in self.val_fps):
+                    continue
 
                 self.datapoints.append(naip_path)
             self.data_len = len(self.datapoints)
@@ -151,7 +174,11 @@ class LRHRDataset(Dataset):
                     [s2_chunks, img_HR] = Util.transform_augment(
                                     [s2_chunks, naip_chip], split=self.split, min_max=(-1, 1), multi_s2=True)
 
-                    img_SR = torch.cat(s2_chunks)
+                    use_3d = False
+                    if use_3d:
+                        img_SR = torch.stack(s2_chunks)
+                    else:
+                        img_SR = torch.cat(s2_chunks)
 
             return {'HR': img_HR, 'SR': img_SR, 'Index': index}
 
