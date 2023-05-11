@@ -9,7 +9,7 @@
         "tb_logger": "/results/18-s2-8gpus-pretrained/tb_logger",
         "results": "/results/18-s2-8gpus-pretrained/results/",
         "checkpoint": "/results/18-s2-8gpus-pretrained/checkpoint",
-        "resume_state": "results/s2-18-vs1/checkpoint/I720000_E1"
+        "resume_state": "/data/piperw/s2-18-vs1/checkpoint/I720000_E1"
     },
     "datasets": {
         "train": {
