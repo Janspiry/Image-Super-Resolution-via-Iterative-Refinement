@@ -102,6 +102,7 @@ def transform_augment(img_list, split='val', min_max=(0, 1), multi_s2=False, con
     # Apply flip augmentation to train data.
     if split == 'train':
         imgs = torch.stack(imgs, 0)
+        print("imgs:", imgs.shape)
         imgs = hflip(imgs)
         imgs = torch.unbind(imgs, dim=0)
 

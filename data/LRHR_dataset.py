@@ -161,7 +161,6 @@ class LRHRDataset(Dataset):
                 else:
                     [s2_chunks, img_HR] = Util.transform_augment(
                                     [s2_chunks, naip_chip], split=self.split, min_max=(-1, 1), multi_s2=True)
-                    print("transofmr?:", s2_chunks.shape)
 
                     use_3d = False
                     if use_3d:
