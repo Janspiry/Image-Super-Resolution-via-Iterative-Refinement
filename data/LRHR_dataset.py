@@ -6,6 +6,7 @@ import random
 import data.util as Util
 import skimage.io
 import os
+import random
 import cv2
 import json
 import glob
@@ -124,15 +125,10 @@ class LRHRDataset(Dataset):
             s2_images = skimage.io.imread(s2_path)
             s2_chunks = np.reshape(s2_images, (-1, 32, 32, 3))
 
-            savedir = 'testing_correlation/'
-            for ii,s2_chunk in enumerate(s2_chunks[:18, :, :, :]):
-                s2_chunk.squeeze()
-                skimage.io.imsave(savedir+str(ii)+'.png', s2_chunk)
-            skimage.io.imsave(savedir+'naip.png', naip_chip)
-            exit()
-
-            # Now only take the first t of the T available S2 chunks.
-            s2_chunks = s2_chunks[:18, :, :, :]
+            # Pick 18 random indices of s2 images to use.
+            rand_indices = random.sample(range(0, len(s2_chunks)), 18)
+            s2_chunks = [s2_chunks[i] for i in rand_indices]
+            s2_chunks = np.array(s2_chunks)
 
             # Upsample to 512x512 (or whatever size your desired output is going to be.
             up_s2_chunk = torch.permute(torch.from_numpy(s2_chunks), (0, 3, 1, 2))
