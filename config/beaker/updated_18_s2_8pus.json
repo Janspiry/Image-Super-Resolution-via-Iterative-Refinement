@@ -1,32 +1,33 @@
 {
-    "name": "testing_vis",
+    "name": "updated-18-s2-8gpus",
     "phase": "train", // train or val
     "gpu_ids": [
-        7
+        0,1,2,3,4,5,6,7
     ],
     "path": { //set the path
-        "log": "results/name/logs",
-        "tb_logger": "results/name/tb_logger",
-        "results": "results/name/results",
-        "checkpoint": "results/name/checkpoint",
-	"resume_state": null //"results/name/checkpoint/I10_E1"
+        "log": "/results/updated-18-s2-8gpus/logs",
+        "tb_logger": "/results/updated-18-s2-8gpus/tb_logger",
+        "results": "/results/updated-18-s2-8gpus/results",
+        "checkpoint": "/results/updated-18-s2-8gpus/checkpoint",
+        "resume_state": null
     },
     "datasets": {
         "train": {
             "name": "S2-NAIP",
-	    "dataroot": "/data/first_ten_million/",
+	    "dataroot": "/data/piperw/first_ten_million/",
             "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
-            "batch_size": 4,
-            "num_workers": 8,
+            "batch_size": 32,
+            "num_workers": 16,
             "use_shuffle": true,
             "data_len": -1, // -1 represents all data used in train
-	    "n_s2_images": 18
+            "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint
         },
         "val": {
             "name": "S2-NAIP",
-            "dataroot": "/data/first_ten_million/",
+            "dataroot": "/data/piperw/first_ten_million/",
             "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
-            "n_s2_images": 18
+            "data_len": 10, // data length in validation 
+            "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint
         }
     },
     "model": {
@@ -70,7 +71,7 @@
         }
     },
     "train": {
-        "n_iter": 1000000,
+        "n_iter": 10000000,
         "val_freq": 10,
         "save_checkpoint_freq": 10,
         "print_freq": 10,

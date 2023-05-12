@@ -1,15 +1,15 @@
 {
-    "name": "testing_vis",
-    "phase": "train", // train or val
+    "name": "18-s2-vis",
+    "phase": "val", // train or val
     "gpu_ids": [
         7
     ],
     "path": { //set the path
-        "log": "results/name/logs",
-        "tb_logger": "results/name/tb_logger",
-        "results": "results/name/results",
-        "checkpoint": "results/name/checkpoint",
-	"resume_state": null //"results/name/checkpoint/I10_E1"
+        "log": "experiments/18-s2-vis/logs",
+        "tb_logger": "experiments/18-s2-vis/tb_logger",
+        "results": "experiments/18-s2-vis/results",
+        "checkpoint": "experiments/18-s2-vis/checkpoint",
+        "resume_state": "/data/s2-18-vs1/checkpoint/I720000_E1"
     },
     "datasets": {
         "train": {
@@ -20,13 +20,13 @@
             "num_workers": 8,
             "use_shuffle": true,
             "data_len": -1, // -1 represents all data used in train
-	    "n_s2_images": 18
+            "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint
         },
         "val": {
             "name": "S2-NAIP",
             "dataroot": "/data/first_ten_million/",
             "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
-            "n_s2_images": 18
+            "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint
         }
     },
     "model": {
@@ -70,10 +70,10 @@
         }
     },
     "train": {
-        "n_iter": 1000000,
-        "val_freq": 10,
-        "save_checkpoint_freq": 10,
-        "print_freq": 10,
+        "n_iter": 10000000,
+        "val_freq": 2e4,
+        "save_checkpoint_freq": 2e4,
+        "print_freq": 2000,
         "optimizer": {
             "type": "adam",
             "lr": 1e-4

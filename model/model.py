@@ -66,7 +66,6 @@ class DDPM(BaseModel):
             else:
                 self.SR = self.netG.super_resolution(
                     self.data['SR'], continous)
-            print("self.SR in test shape:", self.SR.shape)
         self.netG.train()
 
     def sample(self, batch_size=1, continous=False):
@@ -98,7 +97,6 @@ class DDPM(BaseModel):
 
     def get_current_visuals(self, need_LR=True, sample=False, datatype='img'):
         out_dict = OrderedDict()
-
         if datatype == 'img':
             out_dict['SR'] = self.SR.detach().float().cpu()
             out_dict['INF'] = self.data['SR'].detach().float().cpu()
@@ -172,7 +170,6 @@ class DDPM(BaseModel):
 
         # For resuming state as the original code does:
         load_path = self.opt['path']['resume_state']
-        print("load path:", load_path)
         if load_path is not None:
             logger.info(
                 'Loading pretrained model for G [{:s}] ...'.format(load_path))

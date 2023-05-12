@@ -12,6 +12,7 @@ import glob
 import numpy as np
 import torch
 from torchvision.transforms import functional as trans_fn
+import glob
 
 
 class LRHRDataset(Dataset):
@@ -27,7 +28,7 @@ class LRHRDataset(Dataset):
         self.downsample_res = downsample_res
 
         # Paths to the imagery.
-        self.s2_path = os.path.join(dataroot, 's2')
+        self.s2_path = os.path.join(dataroot, 's2_condensed')
         self.naip_path = os.path.join(dataroot, 'naip')
 
         # Load in the list of naip images that we want to use for val.
@@ -39,34 +40,32 @@ class LRHRDataset(Dataset):
                 fp = fp[:-1]
                 self.val_fps.append(os.path.join(self.naip_path, fp))
 
-	# Open the metadata file that contains naip_chip:s2_tiles mappings.
-        meta_fp = os.path.join(dataroot, 'metadata/naip_to_s2.json')
-        meta_file = open(meta_fp)
-        self.meta = json.load(meta_file)
-        self.naip_chips = list(self.meta.keys())
-
-        print("s2 path:", self.s2_path, " naip:", self.naip_path, " meta fp:", meta_fp, " len(val_fps):", len(self.val_fps))
+        self.naip_chips = glob.glob(self.naip_path + '/**/*.png', recursive=True)
+        print("self.naip chips:", len(self.naip_chips))
 
         # Conditioning on S2.
         if datatype == 's2' or datatype == 's2_and_downsampled_naip':
 
-            # Using the metadata, create list of [naip_path, [s2_paths]] sets.
             self.datapoints = []
-            for k,v in self.meta.items():
-                naip_name, naip_chip = k[:-12], k[-11:]
-                naip_path = os.path.join(self.naip_path, naip_name, 'tci', naip_chip+'.png')
+            for n in self.naip_chips:
 
-                # If this is the train dataset, ignore the subset of images that we want to use for validation.
-                if self.split == 'train' and specify_val and (naip_path in self.val_fps):
+		# If this is the train dataset, ignore the subset of images that we want to use for validation.
+                if self.split == 'train' and specify_val and (n in self.val_fps):
                     continue
-                # If this is the validation dataset, ignore any images that aren't in the subset.
-                if self.split == 'val' and specify_val and not (naip_path in self.val_fps):
+		# If this is the validation dataset, ignore any images that aren't in the subset.
+                if self.split == 'val' and specify_val and not (n in self.val_fps):
                     continue
 
-                s2_list = [os.path.join(self.s2_path, x[0], 'tci', x[1]+'.png') for x in v]
-                s2_paths = random.sample(s2_list, self.n_s2_images)
+                # ex. /data/first_ten_million/naip/m_2808033_sw_17_060_20191202/tci/36046_54754.png
+                split_path = n.split('/')
+                chip = split_path[-1][:-4]
+                tile = int(chip.split('_')[0]) // 16, int(chip.split('_')[1]) // 16
+                s2_left_corner = tile[0] * 16, tile[1] * 16
+                diffs = int(chip.split('_')[0]) - s2_left_corner[0], int(chip.split('_')[1]) - s2_left_corner[1]
 
-                self.datapoints.append([naip_path, s2_paths])
+                s2_path = os.path.join(self.s2_path, str(tile[0])+'_'+str(tile[1]), str(diffs[0])+'_'+str(diffs[1])+'.png')
+
+                self.datapoints.append([n, s2_path])
 
             self.data_len = len(self.datapoints)
         
@@ -75,9 +74,7 @@ class LRHRDataset(Dataset):
 
             # Build list of NAIP chip paths.
             self.datapoints = []
-            for k,v in self.meta.items():
-                naip_name, naip_chip = k[:-12], k[-11:]
-                naip_path = os.path.join(self.naip_path, naip_name, 'tci', naip_chip+'.png')
+            for n in self.naip_chips:
 
                 # If this is the train dataset, ignore the subset of images that we want to use for validation.
                 if self.split == 'train' and self.specify_val and (naip_path in self.val_fps):
@@ -86,7 +83,7 @@ class LRHRDataset(Dataset):
                 if self.split == 'val' and self.specify_val and not (naip_path in self.val_fps):
                     continue
 
-                self.datapoints.append(naip_path)
+                self.datapoints.append(n)
             self.data_len = len(self.datapoints)
 
         elif datatype == 'img':
@@ -118,30 +115,21 @@ class LRHRDataset(Dataset):
         # Conditioning on S2, or S2 and downsampled NAIP.
         if self.datatype == 's2' or self.datatype == 's2_and_downsampled_naip':
             datapoint = self.datapoints[index]
-            naip_path, s2_paths = datapoint[0], datapoint[1]
+            naip_path, s2_path = datapoint[0], datapoint[1]
 
             # Load the 512x512 NAIP chip.
             naip_chip = skimage.io.imread(naip_path)
 
-	    # Extract components from the NAIP chip filepath.
-            split = naip_path.split('/')
-            chip = split[-1][:-4]
-            tile = int(chip.split('_')[0]) // 16, int(chip.split('_')[1]) // 16  # s2 tile that contains the naip chip
+            # Load the Tx32x32 S2 file.
+            s2_images = skimage.io.imread(s2_path)
+            s2_chunks = np.reshape(s2_images, (-1, 32, 32, 3))
+            print("s2 chunks:", s2_chunks.shape)
 
-            # For each S2 tile, we want to read in the image then find and extract the 32x32 chunk corresponding to NAIP chip.
-            s2_chunks = []
-            for s2_path in s2_paths:
-                s2_img = skimage.io.imread(s2_path)
-                
-                s2_left_corner = tile[0] * 16, tile[1] * 16
-                diffs = int(chip.split('_')[0]) - s2_left_corner[0], int(chip.split('_')[1]) - s2_left_corner[1]
-                s2_chunk = s2_img[diffs[1]*32 : (diffs[1]+1)*32, diffs[0]*32 : (diffs[0]+1)*32, :]
-
-                s2_chunk = torch.permute(torch.from_numpy(s2_chunk), (2, 0, 1))
-                s2_chunk = trans_fn.resize(s2_chunk, 512, Image.BICUBIC)
-                s2_chunk = trans_fn.center_crop(s2_chunk, 512)
-                s2_chunk = torch.permute(s2_chunk, (1, 2, 0)).numpy()
-                s2_chunks.append(s2_chunk)
+            # Upsample to 512x512 (or whatever size your desired output is going to be.
+            up_s2_chunk = torch.permute(torch.from_numpy(s2_chunks), (2, 0, 1))
+            up_s2_chunk = trans_fn.resize(up_s2_chunk, 512, Image.BICUBIC)
+            s2_chunks = torch.permute(up_s2_chunk, (1, 2, 0)).numpy()
+            print("s2 chunks:", s2_chunks.shape)
 
             # If conditioning on downsampled naip (along with S2), need to downsample original NAIP datapoint and upsample
             # it to get it to the size of the other inputs.
@@ -173,6 +161,7 @@ class LRHRDataset(Dataset):
                 else:
                     [s2_chunks, img_HR] = Util.transform_augment(
                                     [s2_chunks, naip_chip], split=self.split, min_max=(-1, 1), multi_s2=True)
+                    print("transofmr?:", s2_chunks.shape)
 
                     use_3d = False
                     if use_3d:
