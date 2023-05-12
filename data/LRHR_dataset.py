@@ -28,7 +28,7 @@ class LRHRDataset(Dataset):
         self.downsample_res = downsample_res
 
         # Paths to the imagery.
-        self.s2_path = os.path.join(dataroot, 's2_condensed')
+        self.s2_path = os.path.join(dataroot, 's2_png_condensed')
         self.naip_path = os.path.join(dataroot, 'naip')
 
         # Load in the list of naip images that we want to use for val.
@@ -126,13 +126,11 @@ class LRHRDataset(Dataset):
 
             # Now only take the first t of the T available S2 chunks.
             s2_chunks = s2_chunks[:18, :, :, :]
-            print("s2 chunks:", s2_chunks.shape)
 
             # Upsample to 512x512 (or whatever size your desired output is going to be.
             up_s2_chunk = torch.permute(torch.from_numpy(s2_chunks), (0, 3, 1, 2))
             up_s2_chunk = trans_fn.resize(up_s2_chunk, 512, Image.BICUBIC)
             s2_chunks = torch.permute(up_s2_chunk, (0, 2, 3, 1)).numpy()
-            print("s2 chunks:", s2_chunks.shape)
 
             # If conditioning on downsampled naip (along with S2), need to downsample original NAIP datapoint and upsample
             # it to get it to the size of the other inputs.

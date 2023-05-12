@@ -78,7 +78,6 @@ if __name__ == "__main__":
     if os.path.exists(last_gen_check) and os.path.exists(last_opt_check):
         print("Resuming from last checkpoints...", last_gen_check, " and ", last_opt_check)
         opt['path']['resume_state'] = os.path.join(opt['path']['checkpoint'], 'last')
-        print("opt['path']['resume_state']:", opt['path']['resume_state'])
     # If not resuming from last checkpoint and just trying to load in weights, it should default to here.
     elif (opt['path']['resume_gen_state'] and opt['path']['resume_opt_state']) or opt['path']['resume_state']:
         logger.info('Resuming training from epoch: {}, iter: {}.'.format(
@@ -306,15 +305,14 @@ if __name__ == "__main__":
                 Metrics.save_img(
                     sr_img, '{}/{}_{}_sr.png'.format(result_path, current_step, idx))
                 Metrics.save_img(s2_img, '{}/{}_{}_s2.png'.format(result_path, current_step, idx))
-                print("saving to:", result_path, current_step, idx)
 
                 # Make a gif?
-                import imageio
-                images = []
-                for img in visuals['SR']:
-                    img = np.transpose(img, (1,2,0))
-                    images.append(img)
-                imageio.mimsave(result_path+'/'+str(current_step)+'_'+str(idx)+'_gif.gif', images)
+                #import imageio
+                #images = []
+                #for img in visuals['SR']:
+                #    img = np.transpose(img, (1,2,0))
+                #    images.append(img)
+                #imageio.mimsave(result_path+'/'+str(current_step)+'_'+str(idx)+'_gif.gif', images)
 
             # NAIP generation based on S2 + downsampled NAIP conditioning.
             elif datatype == 's2_and_downsampled_naip':
