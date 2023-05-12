@@ -63,7 +63,7 @@ class LRHRDataset(Dataset):
                 s2_left_corner = tile[0] * 16, tile[1] * 16
                 diffs = int(chip.split('_')[0]) - s2_left_corner[0], int(chip.split('_')[1]) - s2_left_corner[1]
 
-                s2_path = os.path.join(self.s2_path, str(tile[0])+'_'+str(tile[1]), str(diffs[0])+'_'+str(diffs[1])+'.png')
+                s2_path = os.path.join(self.s2_path, str(tile[0])+'_'+str(tile[1]), str(diffs[1])+'_'+str(diffs[0])+'.png')
 
                 self.datapoints.append([n, s2_path])
 
@@ -123,6 +123,13 @@ class LRHRDataset(Dataset):
             # Load the Tx32x32 S2 file.
             s2_images = skimage.io.imread(s2_path)
             s2_chunks = np.reshape(s2_images, (-1, 32, 32, 3))
+
+            savedir = 'testing_correlation/'
+            for ii,s2_chunk in enumerate(s2_chunks[:18, :, :, :]):
+                s2_chunk.squeeze()
+                skimage.io.imsave(savedir+str(ii)+'.png', s2_chunk)
+            skimage.io.imsave(savedir+'naip.png', naip_chip)
+            exit()
 
             # Now only take the first t of the T available S2 chunks.
             s2_chunks = s2_chunks[:18, :, :, :]
