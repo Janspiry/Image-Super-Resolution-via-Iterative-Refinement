@@ -123,6 +123,9 @@ class LRHRDataset(Dataset):
             # Load the Tx32x32 S2 file.
             s2_images = skimage.io.imread(s2_path)
             s2_chunks = np.reshape(s2_images, (-1, 32, 32, 3))
+
+            # Now only take the first t of the T available S2 chunks.
+            s2_chunks = s2_chunks[:18, :, :, :]
             print("s2 chunks:", s2_chunks.shape)
 
             # Upsample to 512x512 (or whatever size your desired output is going to be.
