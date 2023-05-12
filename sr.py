@@ -72,11 +72,15 @@ if __name__ == "__main__":
     current_epoch = diffusion.begin_epoch
     n_iter = opt['train']['n_iter']
 
-    # FOR BEAKER: check if there is an existing checkpoint best.pth
-    # If so, load it in, otherwise skip. This will happen "automatically"
-    # if last_gen.pth and last_opt.pth are specified in config.
-
-    if (opt['path']['resume_gen_state'] and opt['path']['resume_opt_state']) or opt['path']['resume_state']:
+    # FOR BEAKER: check if there is an existing "last" checkpoint within this experiment results dir.
+    last_gen_check = os.path.join(opt['path']['checkpoint'], 'last_gen.pth')
+    last_opt_check = os.path.join(opt['path']['checkpoint'], 'last_opt.pth')
+    if os.path.exists(last_gen_check) and os.path.exists(last_opt_check):
+        print("Resuming from last checkpoints...", last_gen_check, " and ", last_opt_check)
+        opt['path']['resume_state'] = os.path.join(opt['path']['checkpoint'], 'last')
+        print("opt['path']['resume_state']:", opt['path']['resume_state'])
+    # If not resuming from last checkpoint and just trying to load in weights, it should default to here.
+    elif (opt['path']['resume_gen_state'] and opt['path']['resume_opt_state']) or opt['path']['resume_state']:
         logger.info('Resuming training from epoch: {}, iter: {}.'.format(
             current_epoch, current_step))
 
@@ -240,6 +244,7 @@ if __name__ == "__main__":
 
         # save model
         logger.info('End of training.')
+
     else:
         logger.info('Begin Model Evaluation.')
         avg_psnr = 0.0
@@ -248,37 +253,83 @@ if __name__ == "__main__":
         result_path = '{}'.format(opt['path']['results'])
         os.makedirs(result_path, exist_ok=True)
         for _,  val_data in enumerate(val_loader):
+            if idx >= 30:
+                break
+
             idx += 1
             diffusion.feed_data(val_data)
             diffusion.test(continous=True)
-            visuals = diffusion.get_current_visuals()
+            visuals = diffusion.get_current_visuals(datatype=datatype)
 
-            hr_img = Metrics.tensor2img(visuals['HR'])  # uint8
-            lr_img = Metrics.tensor2img(visuals['LR'])  # uint8
-            fake_img = Metrics.tensor2img(visuals['INF'])  # uint8
-
-            sr_img_mode = 'grid'
-            if sr_img_mode == 'single':
-                # single img series
-                sr_img = visuals['SR']  # uint8
-                sample_num = sr_img.shape[0]
-                for iter in range(0, sample_num):
-                    Metrics.save_img(
-                        Metrics.tensor2img(sr_img[iter]), '{}/{}_{}_sr_{}.png'.format(result_path, current_step, idx, iter))
-            else:
-                # grid img
+            # LSUN and NAIP reconstruction experiments.
+            if datatype == 'img':
                 sr_img = Metrics.tensor2img(visuals['SR'])  # uint8
-                Metrics.save_img(
-                    sr_img, '{}/{}_{}_sr_process.png'.format(result_path, current_step, idx))
-                Metrics.save_img(
-                    Metrics.tensor2img(visuals['SR'][-1]), '{}/{}_{}_sr.png'.format(result_path, current_step, idx))
+                hr_img = Metrics.tensor2img(visuals['HR'])  # uint8
+                lr_img = Metrics.tensor2img(visuals['LR'])  # uint8
+                fake_img = Metrics.tensor2img(visuals['INF'])  # uint8
 
-            Metrics.save_img(
-                hr_img, '{}/{}_{}_hr.png'.format(result_path, current_step, idx))
-            Metrics.save_img(
-                lr_img, '{}/{}_{}_lr.png'.format(result_path, current_step, idx))
-            Metrics.save_img(
-                fake_img, '{}/{}_{}_inf.png'.format(result_path, current_step, idx))
+                Metrics.save_img(
+                    hr_img, '{}/{}_{}_hr.png'.format(result_path, current_step, idx))
+                Metrics.save_img(
+                    sr_img, '{}/{}_{}_sr.png'.format(result_path, current_step, idx))
+                Metrics.save_img(
+                    lr_img, '{}/{}_{}_lr.png'.format(result_path, current_step, idx))
+                Metrics.save_img(
+                    fake_img, '{}/{}_{}_inf.png'.format(result_path, current_step, idx))
+
+            # NAIP reconstruction.
+            elif datatype == 'naip':
+                sr_img = Metrics.tensor2img(visuals['SR'])  # uint8
+                hr_img = Metrics.tensor2img(visuals['HR'])  # uint8
+                fake_img = Metrics.tensor2img(visuals['Downsampled_NAIP'])  # uint8
+
+                Metrics.save_img(
+                    hr_img, '{}/{}_{}_hr.png'.format(result_path, current_step, idx))
+                Metrics.save_img(
+                    sr_img, '{}/{}_{}_sr.png'.format(result_path, current_step, idx))
+                Metrics.save_img(
+                    fake_img, '{}/{}_{}_downsampled_naip.png'.format(result_path, current_step, idx))
+
+            # NAIP generation based on S2 conditioning.
+            elif datatype == 's2':
+                sr_img = Metrics.tensor2img(visuals['SR'])
+                hr_img = Metrics.tensor2img(visuals['HR'])
+                s2_img = Metrics.tensor2img(visuals['S2'])
+
+                if s2_img.shape[0] > 3:
+                    s2_img = s2_img[:, :, :3]
+
+                fake_img = s2_img
+
+                Metrics.save_img(
+                    hr_img, '{}/{}_{}_hr.png'.format(result_path, current_step, idx))
+                Metrics.save_img(
+                    sr_img, '{}/{}_{}_sr.png'.format(result_path, current_step, idx))
+                Metrics.save_img(s2_img, '{}/{}_{}_s2.png'.format(result_path, current_step, idx))
+                print("saving to:", result_path, current_step, idx)
+
+                # Make a gif?
+                import imageio
+                images = []
+                for img in visuals['SR']:
+                    img = np.transpose(img, (1,2,0))
+                    images.append(img)
+                imageio.mimsave(result_path+'/'+str(current_step)+'_'+str(idx)+'_gif.gif', images)
+
+            # NAIP generation based on S2 + downsampled NAIP conditioning.
+            elif datatype == 's2_and_downsampled_naip':
+                sr_img = Metrics.tensor2img(visuals['SR'])
+                hr_img = Metrics.tensor2img(visuals['HR'])
+                s2_img = Metrics.tensor2img(visuals['S2'])
+                fake_img = s2_img
+                downsampled_naip_img = Metrics.tensor2img(visuals['Downsampled_NAIP'])
+
+                Metrics.save_img(
+                    hr_img, '{}/{}_{}_hr.png'.format(result_path, current_step, idx))
+                Metrics.save_img(
+                    sr_img, '{}/{}_{}_sr.png'.format(result_path, current_step, idx))
+                Metrics.save_img(s2_img, '{}/{}_{}_s2.png'.format(result_path, current_step, idx))
+                Metrics.save_img(downsampled_naip_img, '{}/{}_{}_downsampled_naip.png'.format(result_path, current_step, idx))
 
             # generation
             eval_psnr = Metrics.calculate_psnr(Metrics.tensor2img(visuals['SR'][-1]), hr_img)
