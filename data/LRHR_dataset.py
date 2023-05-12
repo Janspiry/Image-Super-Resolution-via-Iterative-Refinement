@@ -18,7 +18,7 @@ import glob
 
 class LRHRDataset(Dataset):
     def __init__(self, dataroot, datatype, l_resolution=16, r_resolution=128, split='train', data_len=-1, need_LR=False,
-                    n_s2_images=-1, downsample_res=-1, specify_val=True):
+                    n_s2_images=-1, downsample_res=-1, output_size=512, specify_val=True):
         self.datatype = datatype
         self.l_res = l_resolution
         self.r_res = r_resolution
@@ -27,10 +27,18 @@ class LRHRDataset(Dataset):
         self.split = split
         self.n_s2_images = n_s2_images
         self.downsample_res = downsample_res
+        self.output_size = output_size
 
         # Paths to the imagery.
         self.s2_path = os.path.join(dataroot, 's2_condensed')
-        self.naip_path = os.path.join(dataroot, 'naip')
+        if self.output_size == 512:
+            self.naip_path = os.path.join(dataroot, 'naip')
+        elif self.output_size == 128:
+            self.naip_path = os.path.join(dataroot, 'naip_128')
+        elif self.output_size == 64:
+            self.naip_path = os.path.join(dataroot, 'naip_64')
+        else:
+            print("WARNING: output size not supported yet.")
 
         # Load in the list of naip images that we want to use for val.
         self.val_fps = []
@@ -132,14 +140,14 @@ class LRHRDataset(Dataset):
 
             # Upsample to 512x512 (or whatever size your desired output is going to be.
             up_s2_chunk = torch.permute(torch.from_numpy(s2_chunks), (0, 3, 1, 2))
-            up_s2_chunk = trans_fn.resize(up_s2_chunk, 512, Image.BICUBIC)
+            up_s2_chunk = trans_fn.resize(up_s2_chunk, self.output_size, Image.BICUBIC)
             s2_chunks = torch.permute(up_s2_chunk, (0, 2, 3, 1)).numpy()
 
             # If conditioning on downsampled naip (along with S2), need to downsample original NAIP datapoint and upsample
             # it to get it to the size of the other inputs.
             if self.datatype == 's2_and_downsampled_naip':
                 downsampled_naip = cv2.resize(naip_chip, dsize=(self.downsample_res,self.downsample_res), interpolation=cv2.INTER_CUBIC)
-                downsampled_naip = cv2.resize(downsampled_naip, dsize=(512,512), interpolation=cv2.INTER_CUBIC)
+                downsampled_naip = cv2.resize(downsampled_naip, dsize=(self.output_size, self.output_size), interpolation=cv2.INTER_CUBIC)
 
                 if len(s2_chunks) == 1:
                     s2_chunk = s2_chunks[0]
@@ -182,7 +190,7 @@ class LRHRDataset(Dataset):
 
             # Create the downsampled version on-the-fly.
             downsampled_naip = cv2.resize(naip_chip, dsize=(self.downsample_res,self.downsample_res), interpolation=cv2.INTER_CUBIC)
-            downsampled_naip = cv2.resize(downsampled_naip, dsize=(512,512), interpolation=cv2.INTER_CUBIC)
+            downsampled_naip = cv2.resize(downsampled_naip, dsize=(self.output_size, self.output_size), interpolation=cv2.INTER_CUBIC)
 
             [img_SR, img_HR] = Util.transform_augment([downsampled_naip, naip_chip], split=self.split, min_max=(-1, 1))
 

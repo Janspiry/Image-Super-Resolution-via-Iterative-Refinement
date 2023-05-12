@@ -81,6 +81,8 @@ def init_weights(net, init_type='kaiming', scale=1, std=0.02):
 
 # Generator
 def define_G(opt):
+    output_size = opt['datasets']['output_size']
+    print("output size in define_G:", output_size)
     model_opt = opt['model']
     if model_opt['which_model_G'] == 'ddpm':
         from .ddpm_modules import diffusion, unet
@@ -105,7 +107,8 @@ def define_G(opt):
         channels=model_opt['diffusion']['channels'],
         loss_type='l1',    # L1 or L2
         conditional=model_opt['diffusion']['conditional'],
-        schedule_opt=model_opt['beta_schedule']['train']
+        schedule_opt=model_opt['beta_schedule']['train'],
+        output_size=output_size
     )
     if opt['phase'] == 'train':
         # init_weights(netG, init_type='kaiming', scale=0.1)

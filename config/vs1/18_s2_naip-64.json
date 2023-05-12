@@ -1,0 +1,86 @@
+{
+    "name": "vs1_18_s2_naip-64",
+    "phase": "train", // train or val
+    "gpu_ids": [
+        0,1,2,3
+    ],
+    "path": { //set the path
+        "log": "experiments/vs1-18-s2-naip64/logs",
+        "tb_logger": "experiments/vs1-18-s2-naip64/tb_logger",
+        "results": "experiments/vs1-18-s2-naip64/results",
+        "checkpoint": "experiments/vs1-18-s2-naip64/checkpoint",
+        "resume_state": null
+    },
+    "datasets": {
+	"output_size": 64,
+        "train": {
+            "name": "S2-NAIP",
+	    "dataroot": "/data/first_ten_million/",
+            "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
+            "batch_size": 32,
+            "num_workers": 32,
+            "use_shuffle": true,
+            "data_len": -1, // -1 represents all data used in train
+            "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint
+        },
+        "val": {
+            "name": "S2-NAIP",
+            "dataroot": "/data/first_ten_million/",
+            "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
+            "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint
+        }
+    },
+    "model": {
+        "which_model_G": "sr3", // use the ddpm or sr3 network structure
+        "finetune_norm": false,
+        "unet": {
+            "in_channel": 57,
+            "out_channel": 3,
+            "inner_channel": 64,
+            "channel_multiplier": [
+                1,
+                2,
+                4,
+                8,
+                8
+            ],
+            "attn_res": [
+                16
+            ],
+            "res_blocks": 2,
+            "dropout": 0.2
+        },
+        "beta_schedule": { // use munual beta_schedule for acceleration
+            "train": {
+                "schedule": "linear",
+                "n_timestep": 2000,
+                "linear_start": 1e-6,
+                "linear_end": 1e-2
+            },
+            "val": {
+                "schedule": "linear",
+                "n_timestep": 2000,
+                "linear_start": 1e-6,
+                "linear_end": 1e-2
+            }
+        },
+        "diffusion": {
+	    "image_size": 64,
+            "channels": 3, //sample channel
+            "conditional": true // unconditional generation or unconditional generation(super_resolution)
+        }
+    },
+    "train": {
+        "n_iter": 10000000,
+        "val_freq": 2e4,
+        "save_checkpoint_freq": 2e4,
+        "print_freq": 2000,
+        "optimizer": {
+            "type": "adam",
+            "lr": 1e-4
+        }
+    },
+    "wandb": {
+        "project": "multisat"
+    }
+}

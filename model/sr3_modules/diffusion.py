@@ -69,11 +69,13 @@ class GaussianDiffusion(nn.Module):
         channels=3,
         loss_type='l1',
         conditional=True,
-        schedule_opt=None
+        schedule_opt=None,
+        output_size=512
     ):
         super().__init__()
         self.channels = channels
         self.image_size = image_size
+        self.output_size = output_size  # is this the same as image_size?
         self.denoise_fn = denoise_fn
         self.loss_type = loss_type
         self.conditional = conditional
@@ -187,8 +189,7 @@ class GaussianDiffusion(nn.Module):
                     ret_img = torch.cat([ret_img, img], dim=0)
         else:
             x = x_in
-            #shape = x.shape  # Fro conditioning on one image
-            shape = (1, 3, 512, 512)  # For when condioning isn't the same shape as desired output
+            shape = (1, 3, self.output_size, self.output_size)  # For when condioning isn't the same shape as desired output
             img = torch.randn(shape, device=device)
             ret_img = img # img instead of x?
             for i in tqdm(reversed(range(0, self.num_timesteps)), desc='sampling loop time step', total=self.num_timesteps):

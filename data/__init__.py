@@ -21,7 +21,7 @@ def create_dataloader(dataset, dataset_opt, phase):
             'Dataloader [{:s}] is not found.'.format(phase))
 
 
-def create_dataset(dataset_opt, phase):
+def create_dataset(dataset_opt, phase, output_size=512):
     '''create dataset'''
     mode = dataset_opt['mode']
     from data.LRHR_dataset import LRHRDataset as D
@@ -39,7 +39,8 @@ def create_dataset(dataset_opt, phase):
                 data_len=dataset_opt['data_len'],
                 need_LR=(mode == 'LRHR'),
                 n_s2_images=n_s2_images,
-                downsample_res=downsample_res
+                downsample_res=downsample_res,
+                output_size=output_size
                 )
     logger = logging.getLogger('base')
     logger.info('Dataset [{:s} - {:s}] is created.'.format(dataset.__class__.__name__,
