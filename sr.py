@@ -81,6 +81,7 @@ if __name__ == "__main__":
     if os.path.exists(last_gen_check) and os.path.exists(last_opt_check):
         print("Resuming from last checkpoints...", last_gen_check, " and ", last_opt_check)
         opt['path']['resume_state'] = os.path.join(opt['path']['checkpoint'], 'last')
+
     # If not resuming from last checkpoint and just trying to load in weights, it should default to here.
     elif (opt['path']['resume_gen_state'] and opt['path']['resume_opt_state']) or opt['path']['resume_state']:
         logger.info('Resuming training from epoch: {}, iter: {}.'.format(

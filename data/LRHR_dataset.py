@@ -76,6 +76,10 @@ class LRHRDataset(Dataset):
 
                 self.datapoints.append([n, s2_path])
 
+                # NOTE TAKE OUT WHEN YOU'RE DONE RUNNING THE 10% EXPERIMENTS
+                #if len(self.datapoints) == 350000:
+                #    break
+
             self.data_len = len(self.datapoints)
         
         # NAIP reconstruction, build downsampled version on-the-fly.
