@@ -126,9 +126,9 @@ class LRHRDataset(Dataset):
             print("s2 chunks:", s2_chunks.shape)
 
             # Upsample to 512x512 (or whatever size your desired output is going to be.
-            up_s2_chunk = torch.permute(torch.from_numpy(s2_chunks), (2, 0, 1))
+            up_s2_chunk = torch.permute(torch.from_numpy(s2_chunks), (0, 3, 1, 2))
             up_s2_chunk = trans_fn.resize(up_s2_chunk, 512, Image.BICUBIC)
-            s2_chunks = torch.permute(up_s2_chunk, (1, 2, 0)).numpy()
+            s2_chunks = torch.permute(up_s2_chunk, (0, 2, 3, 1)).numpy()
             print("s2 chunks:", s2_chunks.shape)
 
             # If conditioning on downsampled naip (along with S2), need to downsample original NAIP datapoint and upsample
