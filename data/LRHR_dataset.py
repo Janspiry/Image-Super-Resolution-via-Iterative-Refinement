@@ -28,7 +28,7 @@ class LRHRDataset(Dataset):
         self.downsample_res = downsample_res
 
         # Paths to the imagery.
-        self.s2_path = os.path.join(dataroot, 's2_png_condensed')
+        self.s2_path = os.path.join(dataroot, 's2_condensed')
         self.naip_path = os.path.join(dataroot, 'naip')
 
         # Load in the list of naip images that we want to use for val.
