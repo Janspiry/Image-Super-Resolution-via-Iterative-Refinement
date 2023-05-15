@@ -20,7 +20,6 @@
             "batch_size": 4,
             "num_workers": 8,
             "use_shuffle": true,
-	    "max_tiles": 100,
             "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint
         },
         "val": {
