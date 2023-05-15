@@ -50,8 +50,7 @@ if __name__ == "__main__":
     else:
         wandb_logger = None
     
-    print("Desired output size:", opt['datasets']['output_size'])
-    output_size = opt['datasets']['output_size']
+    output_size = opt['datasets']['output_size'] if 'output_size' in opt['datasets'] else 512
 
     # dataset
     datatype = opt['datasets']['train']['datatype']
@@ -168,7 +167,7 @@ if __name__ == "__main__":
                                 fake_img, '{}/{}_{}_downsampled_naip.png'.format(result_path, current_step, idx))
 
                         # NAIP generation based on S2 conditioning.
-                        elif datatype == 's2':
+                        elif datatype == 's2' or datatype == 'just-s2':
                             sr_img = Metrics.tensor2img(visuals['SR'])  
                             hr_img = Metrics.tensor2img(visuals['HR'])  
                             s2_img = Metrics.tensor2img(visuals['S2'])
@@ -298,6 +297,15 @@ if __name__ == "__main__":
                 sr_img = Metrics.tensor2img(visuals['SR'])
                 hr_img = Metrics.tensor2img(visuals['HR'])
                 s2_img = Metrics.tensor2img(visuals['S2'])
+
+                # Make a gif of all S2 images?
+                #import imageio
+                #kargs = { 'duration': 0.6 }
+                #images = []
+                #for i in range(18):
+                #    img = s2_img[:, :, i*3:(i*3)+3]
+                #    images.append(img)
+                #imageio.mimsave(result_path+'/'+str(current_step)+'_'+str(idx)+'_s2-gif.gif', images, **kargs)
 
                 if s2_img.shape[0] > 3:
                     s2_img = s2_img[:, :, :3]

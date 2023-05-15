@@ -81,8 +81,8 @@ def init_weights(net, init_type='kaiming', scale=1, std=0.02):
 
 # Generator
 def define_G(opt):
-    output_size = opt['datasets']['output_size']
-    print("output size in define_G:", output_size)
+    output_size = opt['datasets']['output_size'] if 'output_size' in opt['datasets'] else 512
+
     model_opt = opt['model']
     if model_opt['which_model_G'] == 'ddpm':
         from .ddpm_modules import diffusion, unet

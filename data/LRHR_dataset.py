@@ -30,6 +30,8 @@ class LRHRDataset(Dataset):
         self.output_size = output_size
         self.max_tiles = max_tiles
 
+        print("SELF.DATATYPE:", self.datatype)
+
         # Paths to the imagery.
         self.s2_path = os.path.join(dataroot, 's2_condensed')
         if self.output_size == 512:
@@ -38,6 +40,8 @@ class LRHRDataset(Dataset):
             self.naip_path = os.path.join(dataroot, 'naip_128')
         elif self.output_size == 64:
             self.naip_path = os.path.join(dataroot, 'naip_64')
+        elif self.output_size == 32:
+            self.naip_path = os.path.join(dataroot, 'naip_32')
         else:
             print("WARNING: output size not supported yet.")
 
@@ -54,7 +58,7 @@ class LRHRDataset(Dataset):
         print("self.naip chips:", len(self.naip_chips))
 
         # Conditioning on S2.
-        if datatype == 's2' or datatype == 's2_and_downsampled_naip':
+        if datatype == 's2' or datatype == 's2_and_downsampled_naip' or datatype == 'just-s2':
 
             self.datapoints = []
             for n in self.naip_chips:
@@ -82,7 +86,7 @@ class LRHRDataset(Dataset):
                     break
 
             self.data_len = len(self.datapoints)
-        
+
         # NAIP reconstruction, build downsampled version on-the-fly.
         elif datatype == 'naip':
 
@@ -127,7 +131,7 @@ class LRHRDataset(Dataset):
         img_LR = None
 
         # Conditioning on S2, or S2 and downsampled NAIP.
-        if self.datatype == 's2' or self.datatype == 's2_and_downsampled_naip':
+        if self.datatype == 's2' or self.datatype == 's2_and_downsampled_naip' or self.datatype == 'just-s2':
             datapoint = self.datapoints[index]
             naip_path, s2_path = datapoint[0], datapoint[1]
 
@@ -138,15 +142,24 @@ class LRHRDataset(Dataset):
             s2_images = skimage.io.imread(s2_path)
             s2_chunks = np.reshape(s2_images, (-1, 32, 32, 3))
 
-            # Pick 18 random indices of s2 images to use.
-            rand_indices = random.sample(range(0, len(s2_chunks)), 18)
-            s2_chunks = [s2_chunks[i] for i in rand_indices]
-            s2_chunks = np.array(s2_chunks)
+            # SPECIAL CASE: when we are running a S2 upsampling experiment, sample 1 more 
+            # S2 image than specified. We'll use that as our "high res" image and the rest 
+            # as conditioning. Because the min number of S2 images is 18, have to use 17 for time series.
+            if self.datatype == 'just-s2':
+                rand_indices = random.sample(range(0, len(s2_chunks)), 18)
+                s2_chunks = [s2_chunks[i] for i in rand_indices[1:]]
+                s2_chunks = np.array(s2_chunks)
+                naip_chip = s2_chunks[0]  # this is a fake naip chip
+            else:
+                # Pick 18 random indices of s2 images to use.
+                rand_indices = random.sample(range(0, len(s2_chunks)), 18)
+                s2_chunks = [s2_chunks[i] for i in rand_indices]
+                s2_chunks = np.array(s2_chunks)
 
-            # Upsample to 512x512 (or whatever size your desired output is going to be.
-            up_s2_chunk = torch.permute(torch.from_numpy(s2_chunks), (0, 3, 1, 2))
-            up_s2_chunk = trans_fn.resize(up_s2_chunk, self.output_size, Image.BICUBIC)
-            s2_chunks = torch.permute(up_s2_chunk, (0, 2, 3, 1)).numpy()
+                # Upsample to 512x512 (or whatever size your desired output is going to be.
+                up_s2_chunk = torch.permute(torch.from_numpy(s2_chunks), (0, 3, 1, 2))
+                up_s2_chunk = trans_fn.resize(up_s2_chunk, self.output_size, Image.BICUBIC)
+                s2_chunks = torch.permute(up_s2_chunk, (0, 2, 3, 1)).numpy()
 
             # If conditioning on downsampled naip (along with S2), need to downsample original NAIP datapoint and upsample
             # it to get it to the size of the other inputs.
@@ -168,7 +181,7 @@ class LRHRDataset(Dataset):
                     img_SR = torch.cat((torch.stack(s2_chunks), downsampled_naip))
                     img_HR = naip_chip
 
-            elif self.datatype == 's2':
+            elif self.datatype == 's2' or self.datatype == 'just-s2':
 
                 if len(s2_chunks) == 1:
                     s2_chunk = s2_chunks[0]

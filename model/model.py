@@ -105,7 +105,7 @@ class DDPM(BaseModel):
                 out_dict['LR'] = self.data['LR'].detach().float().cpu()
             else:
                 out_dict['LR'] = out_dict['INF']
-        elif datatype == 's2': 
+        elif datatype == 's2' or datatype == 'just-s2': 
             s2 = self.data['SR']
             out_dict['S2'] = s2.detach().float().cpu()
             out_dict['SR'] = self.SR.detach().float().cpu()  # self.SR is the generated Superresolution
