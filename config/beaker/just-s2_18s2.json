@@ -2,7 +2,7 @@
     "name": "just-s2_18s2",
     "phase": "train", // train or val
     "gpu_ids": [
-        0
+        0,1,2,3
     ],
     "path": { //set the path
         "log": "/results/just-s2_18s2/logs",
