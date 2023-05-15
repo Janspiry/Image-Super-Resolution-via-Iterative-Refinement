@@ -15,7 +15,7 @@
 	"output_size": 64,
         "train": {
             "name": "S2-NAIP",
-	    "dataroot": "/net/nfs.cirrascale/prior/piperw/first_ten_million/",
+	    "dataroot": "/data/piperw/first_ten_million/",
             "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
             "batch_size": 32,
             "num_workers": 16,
@@ -25,7 +25,7 @@
         },
         "val": {
             "name": "S2-NAIP",
-            "dataroot": "/net/nfs.cirrascale/prior/piperw/first_ten_million/",
+            "dataroot": "/data/piperw/first_ten_million/",
             "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
             "data_len": 10, // data length in validation 
             "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint

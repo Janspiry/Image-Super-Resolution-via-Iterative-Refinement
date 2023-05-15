@@ -18,7 +18,7 @@ import glob
 
 class LRHRDataset(Dataset):
     def __init__(self, dataroot, datatype, l_resolution=16, r_resolution=128, split='train', data_len=-1, need_LR=False,
-                    n_s2_images=-1, downsample_res=-1, output_size=512, specify_val=True):
+                    n_s2_images=-1, downsample_res=-1, output_size=512, max_tiles=-1, specify_val=True):
         self.datatype = datatype
         self.l_res = l_resolution
         self.r_res = r_resolution
@@ -28,6 +28,7 @@ class LRHRDataset(Dataset):
         self.n_s2_images = n_s2_images
         self.downsample_res = downsample_res
         self.output_size = output_size
+        self.max_tiles = max_tiles
 
         # Paths to the imagery.
         self.s2_path = os.path.join(dataroot, 's2_condensed')
@@ -76,9 +77,9 @@ class LRHRDataset(Dataset):
 
                 self.datapoints.append([n, s2_path])
 
-                # NOTE TAKE OUT WHEN YOU'RE DONE RUNNING THE 10% EXPERIMENTS
-                #if len(self.datapoints) == 350000:
-                #    break
+                # Only add 'max_tiles' datapoints to the datapoints list if specified.
+                if self.max_tiles != -1 and len(self.datapoints) >= self.max_tiles:
+                    break
 
             self.data_len = len(self.datapoints)
         

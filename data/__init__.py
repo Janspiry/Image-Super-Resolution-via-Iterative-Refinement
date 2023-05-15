@@ -30,6 +30,7 @@ def create_dataset(dataset_opt, phase, output_size=512):
     r_res = None if not 'r_resolution' in dataset_opt else dataset_opt['r_resolution']
     n_s2_images = -1 if not 'n_s2_images' in dataset_opt else dataset_opt['n_s2_images']
     downsample_res = -1 if not 'downsample_res' in dataset_opt else dataset_opt['downsample_res']
+    max_tiles = -1 if not 'max_tiles' in dataset_opt else dataset_opt['max_tiles']
 
     dataset = D(dataroot=dataset_opt['dataroot'],
                 datatype=dataset_opt['datatype'],
@@ -40,7 +41,8 @@ def create_dataset(dataset_opt, phase, output_size=512):
                 need_LR=(mode == 'LRHR'),
                 n_s2_images=n_s2_images,
                 downsample_res=downsample_res,
-                output_size=output_size
+                output_size=output_size,
+                max_tiles=max_tiles
                 )
     logger = logging.getLogger('base')
     logger.info('Dataset [{:s} - {:s}] is created.'.format(dataset.__class__.__name__,
