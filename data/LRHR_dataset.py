@@ -41,7 +41,7 @@ class LRHRDataset(Dataset):
         elif self.output_size == 64:
             self.naip_path = os.path.join(dataroot, 'naip_64')
         elif self.output_size == 32:
-            self.naip_path = os.path.join(dataroot, 'naip_32')
+            self.naip_path = os.path.join(dataroot, 'naip')
         else:
             print("WARNING: output size not supported yet.")
 
