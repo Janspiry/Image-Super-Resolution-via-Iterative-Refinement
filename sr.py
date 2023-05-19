@@ -128,7 +128,7 @@ if __name__ == "__main__":
                         print("Val count:", val_count)
 
                         # Added code here to manually break out of val_loader after X samples have been generated.
-                        if val_count >= 10:
+                        if val_count >= 20:
                             break
 
                         idx += 1
