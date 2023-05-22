@@ -138,8 +138,6 @@ class LRHRDataset(Dataset):
 
             hack = 0
             while(True):
-                index = index + hack
-
                 try:
                     datapoint = self.datapoints[index]
                     naip_path, s2_path = datapoint[0], datapoint[1]
@@ -173,6 +171,7 @@ class LRHRDataset(Dataset):
                 except:
                     print(naip_path, s2_path)
                     hack += 1
+                    index += hack
 
             # If conditioning on downsampled naip (along with S2), need to downsample original NAIP datapoint and upsample
             # it to get it to the size of the other inputs.
