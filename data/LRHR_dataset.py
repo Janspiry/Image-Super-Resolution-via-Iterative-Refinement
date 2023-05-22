@@ -155,13 +155,13 @@ class LRHRDataset(Dataset):
                     # S2 image than specified. We'll use that as our "high res" image and the rest 
                     # as conditioning. Because the min number of S2 images is 18, have to use 17 for time series.
                     if self.datatype == 'just-s2':
-                        rand_indices = random.sample(range(0, len(s2_chunks)), 18)
+                        rand_indices = random.sample(range(0, len(s2_chunks)), self.n_s2_images)
                         s2_chunks = [s2_chunks[i] for i in rand_indices[1:]]
                         s2_chunks = np.array(s2_chunks)
                         naip_chip = s2_chunks[0]  # this is a fake naip chip
                     else:
                         # Pick 18 random indices of s2 images to use.
-                        rand_indices = random.sample(range(0, len(s2_chunks)), 18)
+                        rand_indices = random.sample(range(0, len(s2_chunks)), self.n_s2_images)
                         s2_chunks = [s2_chunks[i] for i in rand_indices]
                         s2_chunks = np.array(s2_chunks)
 
