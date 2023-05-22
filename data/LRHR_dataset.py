@@ -48,6 +48,8 @@ class LRHRDataset(Dataset):
             print("WARNING: output size not supported yet.")
 
         # Load in the list of naip images that we want to use for val.
+        specify_val = False
+        """
         self.val_fps = []
         if specify_val:
             val_fps_f = open('held_out.txt')
@@ -55,6 +57,7 @@ class LRHRDataset(Dataset):
             for fp in val_fps:
                 fp = fp[:-1]
                 self.val_fps.append(os.path.join(self.naip_path, fp))
+        """
 
         self.naip_chips = glob.glob(self.naip_path + '/**/*.png', recursive=True)
         print("self.naip chips:", len(self.naip_chips))
@@ -134,34 +137,43 @@ class LRHRDataset(Dataset):
 
         # Conditioning on S2, or S2 and downsampled NAIP.
         if self.datatype == 's2' or self.datatype == 's2_and_downsampled_naip' or self.datatype == 'just-s2':
-            datapoint = self.datapoints[index]
-            naip_path, s2_path = datapoint[0], datapoint[1]
 
-            # Load the 512x512 NAIP chip.
-            naip_chip = skimage.io.imread(naip_path)
+            hack = 0
+            while(True):
+                try:
+                    datapoint = self.datapoints[index]
+                    naip_path, s2_path = datapoint[0], datapoint[1]
 
-            # Load the Tx32x32 S2 file.
-            s2_images = skimage.io.imread(s2_path)
-            s2_chunks = np.reshape(s2_images, (-1, 32, 32, 3))
+                    # Load the 512x512 NAIP chip.
+                    naip_chip = skimage.io.imread(naip_path)
 
-            # SPECIAL CASE: when we are running a S2 upsampling experiment, sample 1 more 
-            # S2 image than specified. We'll use that as our "high res" image and the rest 
-            # as conditioning. Because the min number of S2 images is 18, have to use 17 for time series.
-            if self.datatype == 'just-s2':
-                rand_indices = random.sample(range(0, len(s2_chunks)), self.n_s2_images)
-                s2_chunks = [s2_chunks[i] for i in rand_indices[1:]]
-                s2_chunks = np.array(s2_chunks)
-                naip_chip = s2_chunks[0]  # this is a fake naip chip
-            else:
-                # Pick 18 random indices of s2 images to use.
-                rand_indices = random.sample(range(0, len(s2_chunks)), self.n_s2_images)
-                s2_chunks = [s2_chunks[i] for i in rand_indices]
-                s2_chunks = np.array(s2_chunks)
+                    # Load the Tx32x32 S2 file.
+                    s2_images = skimage.io.imread(s2_path)
+                    s2_chunks = np.reshape(s2_images, (-1, 32, 32, 3))
 
-                # Upsample to 512x512 (or whatever size your desired output is going to be.
-                up_s2_chunk = torch.permute(torch.from_numpy(s2_chunks), (0, 3, 1, 2))
-                up_s2_chunk = trans_fn.resize(up_s2_chunk, self.output_size, Image.BICUBIC)
-                s2_chunks = torch.permute(up_s2_chunk, (0, 2, 3, 1)).numpy()
+                    # SPECIAL CASE: when we are running a S2 upsampling experiment, sample 1 more 
+                    # S2 image than specified. We'll use that as our "high res" image and the rest 
+                    # as conditioning. Because the min number of S2 images is 18, have to use 17 for time series.
+                    if self.datatype == 'just-s2':
+                        rand_indices = random.sample(range(0, len(s2_chunks)), 18)
+                        s2_chunks = [s2_chunks[i] for i in rand_indices[1:]]
+                        s2_chunks = np.array(s2_chunks)
+                        naip_chip = s2_chunks[0]  # this is a fake naip chip
+                    else:
+                        # Pick 18 random indices of s2 images to use.
+                        rand_indices = random.sample(range(0, len(s2_chunks)), 18)
+                        s2_chunks = [s2_chunks[i] for i in rand_indices]
+                        s2_chunks = np.array(s2_chunks)
+
+                        # Upsample to 512x512 (or whatever size your desired output is going to be.
+                        up_s2_chunk = torch.permute(torch.from_numpy(s2_chunks), (0, 3, 1, 2))
+                        up_s2_chunk = trans_fn.resize(up_s2_chunk, self.output_size, Image.BICUBIC)
+                        s2_chunks = torch.permute(up_s2_chunk, (0, 2, 3, 1)).numpy()
+                    break
+                except:
+                    print(naip_path, s2_path)
+                    hack += 1
+                    index += hack
 
             # If conditioning on downsampled naip (along with S2), need to downsample original NAIP datapoint and upsample
             # it to get it to the size of the other inputs.

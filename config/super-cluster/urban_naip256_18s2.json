@@ -1,30 +1,31 @@
 {
-    "name": "18S2-8gpus-batch128",
+    "name": "18S2-naip256-urban",
     "phase": "train", // train or val
     "gpu_ids": [
         0,1,2,3,4,5,6,7
     ],
     "path": { //set the path
-        "log": "/data/piperw/experiments/18S2-8gpus-batch128/logs",
-        "tb_logger": "/data/piperw/experiments/18S2-8gpus-batch128/tb_logger",
-        "results": "/data/piperw/experiments/18S2-8gpus-batch128/results",
-        "checkpoint": "/data/piperw/experiments/18S2-8gpus-batch128/checkpoint",
+        "log": "/data/piperw/experiments/18S2-naip256-urban/logs",
+        "tb_logger": "/data/piperw/experiments/18S2-naip256-urban/tb_logger",
+        "results": "/data/piperw/experiments/18S2-naip256-urban/results",
+        "checkpoint": "/data/piperw/experiments/18S2-naip256-urban/checkpoint",
         "resume_state": null
     },
     "datasets": {
+	"output_size": 256,
         "train": {
             "name": "S2-NAIP",
-	    "dataroot": "/data/piperw/first_ten_million/",
+	    "dataroot": "/data/piperw/urban_set/",
             "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
             "batch_size": 64,
-            "num_workers": 32,
+            "num_workers": 16,
             "use_shuffle": true,
             "data_len": -1, // -1 represents all data used in train
             "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint
         },
         "val": {
             "name": "S2-NAIP",
-            "dataroot": "/data/piperw/first_ten_million/",
+            "dataroot": "/data/piperw/urban_set/",
             "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
             "data_len": 20, // data length in validation 
             "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint
@@ -65,7 +66,7 @@
             }
         },
         "diffusion": {
-	    "image_size": 512,
+	    "image_size": 256,
             "channels": 3, //sample channel
             "conditional": true // unconditional generation or unconditional generation(super_resolution)
         }
