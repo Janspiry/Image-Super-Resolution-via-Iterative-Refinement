@@ -165,7 +165,7 @@ class LRHRDataset(Dataset):
 
                         # Upsample to 512x512 (or whatever size your desired output is going to be.
                         up_s2_chunk = torch.permute(torch.from_numpy(s2_chunks), (0, 3, 1, 2))
-                        up_s2_chunk = trans_fn.resize(up_s2_chunk, self.output_size, Image.BICUBIC)
+                        up_s2_chunk = trans_fn.resize(up_s2_chunk, self.output_size, Image.BICUBIC, antialias=True)
                         s2_chunks = torch.permute(up_s2_chunk, (0, 2, 3, 1)).numpy()
                     break
                 except:
