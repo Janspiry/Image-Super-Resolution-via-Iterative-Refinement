@@ -36,6 +36,8 @@ class LRHRDataset(Dataset):
         self.s2_path = os.path.join(dataroot, 's2_condensed')
         if self.output_size == 512:
             self.naip_path = os.path.join(dataroot, 'naip')
+        elif self.output_size == 256:
+            self.naip_path = os.path.join(dataroot, 'naip_256')
         elif self.output_size == 128:
             self.naip_path = os.path.join(dataroot, 'naip_128')
         elif self.output_size == 64:
