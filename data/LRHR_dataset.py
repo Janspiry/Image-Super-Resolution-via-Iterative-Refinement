@@ -48,8 +48,7 @@ class LRHRDataset(Dataset):
             print("WARNING: output size not supported yet.")
 
         # Load in the list of naip images that we want to use for val.
-        specify_val = False
-        """
+        specify_val = True
         self.val_fps = []
         if specify_val:
             val_fps_f = open('held_out.txt')
@@ -57,7 +56,6 @@ class LRHRDataset(Dataset):
             for fp in val_fps:
                 fp = fp[:-1]
                 self.val_fps.append(os.path.join(self.naip_path, fp))
-        """
 
         self.naip_chips = glob.glob(self.naip_path + '/**/*.png', recursive=True)
         print("self.naip chips:", len(self.naip_chips))
