@@ -17,7 +17,7 @@
             "name": "S2-NAIP",
 	    "dataroot": "/data/piperw/urban_set/",
             "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
-            "batch_size": 1024,
+            "batch_size": 2048,
             "num_workers": 64,
             "use_shuffle": true,
             "data_len": -1, // -1 represents all data used in train
@@ -25,9 +25,9 @@
         },
         "val": {
             "name": "S2-NAIP",
-            "dataroot": "/data/piperw/urban_set/",
+            "dataroot": "/data/piperw/held_out_set/",
             "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
-            "data_len": 20, // data length in validation 
+            "data_len": 30, // data length in validation 
             "n_s2_images": 6  // if using S2 for condition, how many images per naip datapoint
         }
     },
