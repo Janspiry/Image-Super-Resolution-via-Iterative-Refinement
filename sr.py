@@ -128,8 +128,8 @@ if __name__ == "__main__":
                         print("Val count:", val_count)
 
                         # Added code here to manually break out of val_loader after X samples have been generated.
-                        if val_count >= 20:
-                            break
+                        #if val_count >= 30:
+                        #    break
 
                         idx += 1
                         diffusion.feed_data(val_data)
