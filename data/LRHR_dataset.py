@@ -169,7 +169,7 @@ class LRHRDataset(Dataset):
                         s2_chunks = torch.permute(up_s2_chunk, (0, 2, 3, 1)).numpy()
                     break
                 except:
-                    print(naip_path, s2_path)
+                    print(s2_path)
                     hack += 1
                     index += hack
 
