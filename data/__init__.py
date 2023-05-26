@@ -39,7 +39,6 @@ def create_dataset(dataset_opt, phase, output_size=512):
                 l_resolution=l_res,
                 r_resolution=r_res,
                 split=phase,
-                data_len=dataset_opt['data_len'],
                 need_LR=(mode == 'LRHR'),
                 n_s2_images=n_s2_images,
                 downsample_res=downsample_res,
