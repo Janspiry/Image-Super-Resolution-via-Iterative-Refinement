@@ -61,7 +61,7 @@ if __name__ == "__main__":
     current_step = diffusion.begin_step
     current_epoch = diffusion.begin_epoch
     n_iter = opt['train']['n_iter']
-    sample_sum = opt['datasets']['val']['data_len']
+    sample_sum = 256 #opt['datasets']['val']['data_len']
 
     if opt['path']['resume_state']:
         logger.info('Resuming training from epoch: {}, iter: {}.'.format(
