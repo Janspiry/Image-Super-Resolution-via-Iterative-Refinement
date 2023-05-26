@@ -67,7 +67,7 @@ class LRHRDataset(Dataset):
 
 		# If this is the train dataset, ignore the subset of images that we want to use for validation.
                 if self.split == 'train' and specify_val and (n in self.val_fps):
-                    print("split == train and skipping because n in val_fps")
+                    print("split == train and n in val_fps, skipping....")
                     continue
 		# If this is the validation dataset, ignore any images that aren't in the subset.
                 if self.split == 'val' and specify_val and not (n in self.val_fps):
