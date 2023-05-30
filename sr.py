@@ -120,6 +120,7 @@ if __name__ == "__main__":
 
                     result_path = '{}/{}'.format(opt['path']['results'], current_epoch)
                     os.makedirs(result_path, exist_ok=True)
+                    result_path = 'change_detection_results/'
                     print("result path:", result_path)
 
                     diffusion.set_new_noise_schedule(
@@ -249,10 +250,9 @@ if __name__ == "__main__":
         avg_ssim = 0.0
         idx = 0
         result_path = '{}'.format(opt['path']['results'])
-        result_path = 'naip_128_results'
         os.makedirs(result_path, exist_ok=True)
-        for _,  val_data in enumerate(val_loader):
 
+        for _,  val_data in enumerate(val_loader):
             idx += 1
             diffusion.feed_data(val_data)
             diffusion.test(continous=True)

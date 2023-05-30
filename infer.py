@@ -36,6 +36,18 @@ if __name__ == "__main__":
     logger.info(Logger.dict2str(opt))
     tb_logger = SummaryWriter(log_dir=opt['path']['tb_logger'])
 
+    # FOR BEAKER: check if there is an existing "last" checkpoint within this experiment results dir.
+    last_gen_check = os.path.join(opt['path']['checkpoint'], 'last_gen.pth')
+    last_opt_check = os.path.join(opt['path']['checkpoint'], 'last_opt.pth')
+    if os.path.exists(last_gen_check) and os.path.exists(last_opt_check):
+        print("Resuming from last checkpoints...", last_gen_check, " and ", last_opt_check)
+        opt['path']['resume_state'] = os.path.join(opt['path']['checkpoint'], 'last')
+
+    # If not resuming from last checkpoint and just trying to load in weights, it should default to here.
+    elif (opt['path']['resume_gen_state'] and opt['path']['resume_opt_state']) or opt['path']['resume_state']:
+        logger.info('Resuming training from epoch: {}, iter: {}.'.format(
+            current_epoch, current_step))
+
     # Initialize WandbLogger
     if opt['enable_wandb']:
         wandb_logger = WandbLogger(opt)
@@ -45,7 +57,7 @@ if __name__ == "__main__":
     # dataset
     for phase, dataset_opt in opt['datasets'].items():
         if phase == 'val':
-            val_set = Data.create_dataset(dataset_opt, phase)
+            val_set = Data.create_dataset(dataset_opt, phase, output_size=opt['datasets']['output_size'])
             val_loader = Data.create_dataloader(
                 val_set, dataset_opt, phase)
     logger.info('Initial Dataset Finished')
@@ -89,10 +101,10 @@ if __name__ == "__main__":
             Metrics.save_img(
                 Metrics.tensor2img(visuals['SR'][-1]), '{}/{}_{}_sr.png'.format(result_path, current_step, idx))
 
-        Metrics.save_img(
-            hr_img, '{}/{}_{}_hr.png'.format(result_path, current_step, idx))
-        Metrics.save_img(
-            fake_img, '{}/{}_{}_inf.png'.format(result_path, current_step, idx))
+        #Metrics.save_img(
+        #    hr_img, '{}/{}_{}_hr.png'.format(result_path, current_step, idx))
+        #Metrics.save_img(
+        #    fake_img, '{}/{}_{}_inf.png'.format(result_path, current_step, idx))
 
         if wandb_logger and opt['log_infer']:
             wandb_logger.log_eval_data(fake_img, Metrics.tensor2img(visuals['SR'][-1]), hr_img)

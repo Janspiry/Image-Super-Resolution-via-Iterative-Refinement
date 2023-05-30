@@ -88,6 +88,24 @@ class LRHRDataset(Dataset):
                 if self.max_tiles != -1 and len(self.datapoints) >= self.max_tiles:
                     break
 
+            """
+            #NOTE: TEMPORARY
+            self.datapoints = [
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '0_7.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '0_8.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '0_9.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '1_7.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '1_8.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '1_9.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '2_7.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '2_8.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '2_9.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '3_7.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '3_8.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '3_9.png')]
+                    ]
+            """
+
             self.data_len = len(self.datapoints)
 
         # NAIP reconstruction, build downsampled version on-the-fly.
@@ -141,6 +159,7 @@ class LRHRDataset(Dataset):
 
             # Load the 512x512 NAIP chip.
             naip_chip = skimage.io.imread(naip_path)
+            #naip_chip = np.random.rand(128,128, 3)
 
             # Load the Tx32x32 S2 file.
             s2_images = skimage.io.imread(s2_path)
@@ -162,7 +181,13 @@ class LRHRDataset(Dataset):
 
                 # Upsample to 512x512 (or whatever size your desired output is going to be.
                 up_s2_chunk = torch.permute(torch.from_numpy(s2_chunks), (0, 3, 1, 2))
-                up_s2_chunk = trans_fn.resize(up_s2_chunk, self.output_size, Image.BICUBIC, antialias=True)
+
+                # Bicubic interpolation for the upsampling of the S2 chunks.
+                #up_s2_chunk = trans_fn.resize(up_s2_chunk, self.output_size, Image.BICUBIC, antialias=True)
+
+                # Nearest Neighbor upsampling of the S2 chunks.
+                up_s2_chunk = torch.repeat_interleave(up_s2_chunk, repeats=2, dim=2)
+                up_s2_chunk = torch.repeat_interleave(up_s2_chunk, repeats=2, dim=3)
                 s2_chunks = torch.permute(up_s2_chunk, (0, 2, 3, 1)).numpy()
 
             # If conditioning on downsampled naip (along with S2), need to downsample original NAIP datapoint and upsample
