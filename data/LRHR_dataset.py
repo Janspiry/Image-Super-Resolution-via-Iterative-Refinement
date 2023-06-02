@@ -178,7 +178,7 @@ class LRHRDataset(Dataset):
                 # Check for black pixels (almost certainly invalid) and skip if found.
                 if [0, 0, 0] in naip_chip:
                     counter += 1
-                    print(naip_path, " contains invalid pixels.")
+                    #print(naip_path, " contains invalid pixels.")
                     continue
 
                 # Load the T*32x32 S2 file.
@@ -216,11 +216,8 @@ class LRHRDataset(Dataset):
                     if len(goods) >= self.n_s2_images:
                         rand_indices = random.sample(goods, self.n_s2_images)
                     else:
-                        print("len(goods) < 18...")
                         need = self.n_s2_images - len(goods)
-                        print("need:", need)
                         rand_indices = goods + random.sample(bads, need)
-                        print("appending:", goods, " and ", bads[:need])
 
                     s2_chunks = [s2_chunks[i] for i in rand_indices]
                     s2_chunks = np.array(s2_chunks)
