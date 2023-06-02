@@ -18,7 +18,7 @@
 	    "dataroot": "/data/piperw/urban_set/",
             "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
             "batch_size": 128,
-            "num_workers": 64,
+            "num_workers": 32,
             "use_shuffle": true,
             "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint
         },
@@ -35,7 +35,7 @@
         "unet": {
             "in_channel": 57,
             "out_channel": 3,
-            "inner_channel": 256,
+            "inner_channel": 128,
             "channel_multiplier": [
                 1,
                 2,

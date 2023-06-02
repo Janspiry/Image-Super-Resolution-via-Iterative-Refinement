@@ -161,6 +161,8 @@ class LRHRDataset(Dataset):
         img_HR = None
         img_LR = None
 
+        print("Loading...", index)
+
         # Conditioning on S2, or S2 and downsampled NAIP.
         if self.datatype == 's2' or self.datatype == 's2_and_downsampled_naip' or self.datatype == 'just-s2':
 
@@ -233,6 +235,7 @@ class LRHRDataset(Dataset):
                     #up_s2_chunk = torch.repeat_interleave(up_s2_chunk, repeats=2, dim=3)
 
                     s2_chunks = torch.permute(up_s2_chunk, (0, 2, 3, 1)).numpy()
+                break
 
             # If conditioning on downsampled naip (along with S2), need to downsample original NAIP datapoint and upsample
             # it to get it to the size of the other inputs.
