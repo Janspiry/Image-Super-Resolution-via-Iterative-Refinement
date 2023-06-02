@@ -32,14 +32,11 @@ def create_dataset(dataset_opt, phase, output_size=512):
     downsample_res = -1 if not 'downsample_res' in dataset_opt else dataset_opt['downsample_res']
     max_tiles = -1 if not 'max_tiles' in dataset_opt else dataset_opt['max_tiles']
 
-    print("output size:", output_size, " data len:", dataset_opt['data_len'])
-
     dataset = D(dataroot=dataset_opt['dataroot'],
                 datatype=dataset_opt['datatype'],
                 l_resolution=l_res,
                 r_resolution=r_res,
                 split=phase,
-                data_len=dataset_opt['data_len'],
                 need_LR=(mode == 'LRHR'),
                 n_s2_images=n_s2_images,
                 downsample_res=downsample_res,

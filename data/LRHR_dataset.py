@@ -17,12 +17,11 @@ import glob
 
 
 class LRHRDataset(Dataset):
-    def __init__(self, dataroot, datatype, l_resolution=16, r_resolution=128, split='train', data_len=-1, need_LR=False,
+    def __init__(self, dataroot, datatype, l_resolution=16, r_resolution=128, split='train', need_LR=False,
                     n_s2_images=-1, downsample_res=-1, output_size=512, max_tiles=-1, specify_val=True):
         self.datatype = datatype
         self.l_res = l_resolution
         self.r_res = r_resolution
-        self.data_len = data_len
         self.need_LR = need_LR
         self.split = split
         self.n_s2_images = n_s2_images
@@ -30,7 +29,7 @@ class LRHRDataset(Dataset):
         self.output_size = output_size
         self.max_tiles = max_tiles
 
-        print("SELF.DATATYPE:", self.datatype)
+        print("SELF.DATATYPE:", self.datatype, " OUTPUT_SIZE:", self.output_size)
 
         # Paths to the imagery.
         self.s2_path = os.path.join(dataroot, 's2_condensed')
@@ -43,7 +42,7 @@ class LRHRDataset(Dataset):
         elif self.output_size == 64:
             self.naip_path = os.path.join(dataroot, 'naip_64')
         elif self.output_size == 32:
-            self.naip_path = os.path.join(dataroot, 'naip')
+            self.naip_path = os.path.join(dataroot, 'naip_32')
         else:
             print("WARNING: output size not supported yet.")
 
@@ -59,7 +58,7 @@ class LRHRDataset(Dataset):
         print("length of held out val set:", len(self.val_fps))
 
         self.naip_chips = glob.glob(self.naip_path + '/**/*.png', recursive=True)
-        print("self.naip chips:", len(self.naip_chips))
+        print("self.naip chips:", len(self.naip_chips), " self.naip_path:", self.naip_path)
 
         # Conditioning on S2.
         if datatype == 's2' or datatype == 's2_and_downsampled_naip' or datatype == 'just-s2':
@@ -89,6 +88,33 @@ class LRHRDataset(Dataset):
                 # Only add 'max_tiles' datapoints to the datapoints list if specified.
                 if self.max_tiles != -1 and len(self.datapoints) >= self.max_tiles:
                     break
+
+
+            #NOTE: hardcoded paths for when you want to run inference on specific tiles
+            """
+            self.datapoints = []
+            for i in range(16):
+                for j in range(16):
+                    self.datapoints.append(['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', str(i)+'_'+str(j)+'.png')])
+            self.datapoints = [
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '0_6.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '0_7.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '0_8.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '0_9.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '1_6.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '1_7.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '1_8.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '1_9.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '2_6.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '2_7.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '2_8.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '2_9.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '3_6.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '3_7.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '3_8.png')],
+                    ['/data/piperw/naip/', os.path.join(self.s2_path, '4792'+'_'+'3368', '3_9.png')]
+                    ]
+            """
 
             self.data_len = len(self.datapoints)
 
@@ -138,42 +164,78 @@ class LRHRDataset(Dataset):
         # Conditioning on S2, or S2 and downsampled NAIP.
         if self.datatype == 's2' or self.datatype == 's2_and_downsampled_naip' or self.datatype == 'just-s2':
 
-            hack = 0
-            while(True):
+            # A while loop and try/excepts to catch a few potential errors and continue if caught.
+            counter = 0
+            while True:
+                index += counter  # increment the index based on what errors have been caught
+
+                datapoint = self.datapoints[index]
+                naip_path, s2_path = datapoint[0], datapoint[1]
+
+                # Load the 512x512 NAIP chip.
+                naip_chip = skimage.io.imread(naip_path)
+                
+                # Check for black pixels (almost certainly invalid) and skip if found.
+                if [0, 0, 0] in naip_chip:
+                    counter += 1
+                    print(naip_path, " contains invalid pixels.")
+                    continue
+
+                # Load the T*32x32 S2 file.
+                # There are a few bad S2 paths, if caught then skip to the next one.
                 try:
-                    datapoint = self.datapoints[index]
-                    naip_path, s2_path = datapoint[0], datapoint[1]
-
-                    # Load the 512x512 NAIP chip.
-                    naip_chip = skimage.io.imread(naip_path)
-
-                    # Load the Tx32x32 S2 file.
                     s2_images = skimage.io.imread(s2_path)
-                    s2_chunks = np.reshape(s2_images, (-1, 32, 32, 3))
-
-                    # SPECIAL CASE: when we are running a S2 upsampling experiment, sample 1 more 
-                    # S2 image than specified. We'll use that as our "high res" image and the rest 
-                    # as conditioning. Because the min number of S2 images is 18, have to use 17 for time series.
-                    if self.datatype == 'just-s2':
-                        rand_indices = random.sample(range(0, len(s2_chunks)), self.n_s2_images)
-                        s2_chunks = [s2_chunks[i] for i in rand_indices[1:]]
-                        s2_chunks = np.array(s2_chunks)
-                        naip_chip = s2_chunks[0]  # this is a fake naip chip
-                    else:
-                        # Pick 18 random indices of s2 images to use.
-                        rand_indices = random.sample(range(0, len(s2_chunks)), self.n_s2_images)
-                        s2_chunks = [s2_chunks[i] for i in rand_indices]
-                        s2_chunks = np.array(s2_chunks)
-
-                        # Upsample to 512x512 (or whatever size your desired output is going to be.
-                        up_s2_chunk = torch.permute(torch.from_numpy(s2_chunks), (0, 3, 1, 2))
-                        up_s2_chunk = trans_fn.resize(up_s2_chunk, self.output_size, Image.BICUBIC, antialias=True)
-                        s2_chunks = torch.permute(up_s2_chunk, (0, 2, 3, 1)).numpy()
-                    break
                 except:
-                    print(s2_path)
-                    hack += 1
-                    index += hack
+                    print(s2_path, " failed to load correctly.")
+                    counter += 1
+                    continue
+
+                # Reshape to be Tx32x32.
+                s2_chunks = np.reshape(s2_images, (-1, 32, 32, 3))
+
+                # SPECIAL CASE: when we are running a S2 upsampling experiment, sample 1 more 
+                # S2 image than specified. We'll use that as our "high res" image and the rest 
+                # as conditioning. Because the min number of S2 images is 18, have to use 17 for time series.
+                if self.datatype == 'just-s2':
+                    rand_indices = random.sample(range(0, len(s2_chunks)), self.n_s2_images)
+                    s2_chunks = [s2_chunks[i] for i in rand_indices[1:]]
+                    s2_chunks = np.array(s2_chunks)
+                    naip_chip = s2_chunks[0]  # this is a fake naip chip
+
+                else:
+                    # Iterate through the 32x32 chunks at each timestep, separating them into "good" (valid)
+                    # and "bad" (partially black, invalid). Will use these to pick best collection of S2 images.
+                    goods, bads = [], []
+                    for i,ts in enumerate(s2_chunks):
+                        if [0, 0, 0] in ts:
+                            bads.append(i)
+                        else:
+                            goods.append(i)
+
+                    # Pick 18 random indices of s2 images to use. Skip ones that are partially black.
+                    if len(goods) >= self.n_s2_images:
+                        rand_indices = random.sample(goods, self.n_s2_images)
+                    else:
+                        print("len(goods) < 18...")
+                        need = self.n_s2_images - len(goods)
+                        print("need:", need)
+                        rand_indices = goods + random.sample(bads, need)
+                        print("appending:", goods, " and ", bads[:need])
+
+                    s2_chunks = [s2_chunks[i] for i in rand_indices]
+                    s2_chunks = np.array(s2_chunks)
+
+                    # Convert to torch so we can do some reupsampling.
+                    up_s2_chunk = torch.permute(torch.from_numpy(s2_chunks), (0, 3, 1, 2))
+
+                    # Upsampling Option 1: Bicubic interpolation for the upsampling of the S2 chunks.
+                    up_s2_chunk = trans_fn.resize(up_s2_chunk, self.output_size, Image.BICUBIC, antialias=True)
+
+                    # Upsampling Option 2: Nearest Neighbor upsampling of the S2 chunks.
+                    #up_s2_chunk = torch.repeat_interleave(up_s2_chunk, repeats=2, dim=2)
+                    #up_s2_chunk = torch.repeat_interleave(up_s2_chunk, repeats=2, dim=3)
+
+                    s2_chunks = torch.permute(up_s2_chunk, (0, 2, 3, 1)).numpy()
 
             # If conditioning on downsampled naip (along with S2), need to downsample original NAIP datapoint and upsample
             # it to get it to the size of the other inputs.
@@ -220,7 +282,7 @@ class LRHRDataset(Dataset):
             # Load the 512x512 NAIP chip.
             naip_chip = skimage.io.imread(naip_path)
 
-            # Create the downsampled version on-the-fly.
+            # Create the downsampled version on-the-fly. 
             downsampled_naip = cv2.resize(naip_chip, dsize=(self.downsample_res,self.downsample_res), interpolation=cv2.INTER_CUBIC)
             downsampled_naip = cv2.resize(downsampled_naip, dsize=(self.output_size, self.output_size), interpolation=cv2.INTER_CUBIC)
 

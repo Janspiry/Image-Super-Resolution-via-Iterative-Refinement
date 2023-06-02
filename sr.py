@@ -45,7 +45,7 @@ if __name__ == "__main__":
         wandb_logger = WandbLogger(opt)
         wandb.define_metric('validation/val_step')
         wandb.define_metric('epoch')
-        wandb.define_metric("validation/*", step_metric="val_step")
+        wandb.define_metric("validation/val_psnr", step_metric="val_step")
         val_step = 0
     else:
         wandb_logger = None
@@ -92,12 +92,14 @@ if __name__ == "__main__":
     if opt['phase'] == 'train':
         while current_step < n_iter:
             current_epoch += 1
+
             for _, train_data in enumerate(train_loader):
                 current_step += 1
                 if current_step > n_iter:
                     break
                 diffusion.feed_data(train_data)
                 diffusion.optimize_parameters()
+
                 # log
                 if current_step % opt['train']['print_freq'] == 0:
                     logs = diffusion.get_current_log()
@@ -118,19 +120,13 @@ if __name__ == "__main__":
 
                     result_path = '{}/{}'.format(opt['path']['results'], current_epoch)
                     os.makedirs(result_path, exist_ok=True)
+                    result_path = 'change_detection_results/'
                     print("result path:", result_path)
 
                     diffusion.set_new_noise_schedule(
                         opt['model']['beta_schedule']['val'], schedule_phase='val')
 
-                    val_count = 0
                     for _,  val_data in enumerate(val_loader):
-                        print("Val count:", val_count)
-
-                        # Added code here to manually break out of val_loader after X samples have been generated.
-                        #if val_count >= 30:
-                        #    break
-
                         idx += 1
                         diffusion.feed_data(val_data)
                         diffusion.test(continous=False)
@@ -213,17 +209,17 @@ if __name__ == "__main__":
                                 np.concatenate((fake_img, sr_img, hr_img), axis=1)
                             )
 
-                        # Increase the val_data counter that we've added above.
-                        val_count += 1
-
                     avg_psnr = avg_psnr / idx
+
                     diffusion.set_new_noise_schedule(
                         opt['model']['beta_schedule']['train'], schedule_phase='train')
+
                     # log
                     logger.info('# Validation # PSNR: {:.4e}'.format(avg_psnr))
                     logger_val = logging.getLogger('val')  # validation logger
                     logger_val.info('<epoch:{:3d}, iter:{:8,d}> psnr: {:.4e}'.format(
                         current_epoch, current_step, avg_psnr))
+
                     # tensorboard logger
                     tb_logger.add_scalar('psnr', avg_psnr, current_step)
 
@@ -254,10 +250,8 @@ if __name__ == "__main__":
         idx = 0
         result_path = '{}'.format(opt['path']['results'])
         os.makedirs(result_path, exist_ok=True)
-        for _,  val_data in enumerate(val_loader):
-            if idx >= 30:
-                break
 
+        for _,  val_data in enumerate(val_loader):
             idx += 1
             diffusion.feed_data(val_data)
             diffusion.test(continous=True)
