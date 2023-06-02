@@ -17,7 +17,7 @@
             "name": "S2-NAIP",
 	    "dataroot": "/data/piperw/urban_set/",
             "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
-            "batch_size": 128,
+            "batch_size": 512,
             "num_workers": 64,
             "use_shuffle": true,
             "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint
