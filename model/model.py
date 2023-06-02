@@ -42,6 +42,8 @@ class DDPM(BaseModel):
         self.load_network()
         self.print_network()
 
+        print("Number of netG parameters...", sum(p.numel() for p in self.netG.parameters() if p.requires_grad))
+
     def feed_data(self, data):
         self.data = self.set_device(data)
 
