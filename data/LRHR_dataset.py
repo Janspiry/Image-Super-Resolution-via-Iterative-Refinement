@@ -161,8 +161,6 @@ class LRHRDataset(Dataset):
         img_HR = None
         img_LR = None
 
-        print("Loading...", index)
-
         # Conditioning on S2, or S2 and downsampled NAIP.
         if self.datatype == 's2' or self.datatype == 's2_and_downsampled_naip' or self.datatype == 'just-s2':
 
