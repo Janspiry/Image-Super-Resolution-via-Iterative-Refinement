@@ -12,6 +12,7 @@
         "resume_state": null
     },
     "datasets": {
+	"use_3d": true,
 	"output_size": 128,
         "train": {
             "name": "S2-NAIP",
