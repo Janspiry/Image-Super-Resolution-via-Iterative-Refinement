@@ -224,7 +224,6 @@ if __name__ == "__main__":
                     tb_logger.add_scalar('psnr', avg_psnr, current_step)
 
                     if wandb_logger:
-                        print("wandb logging metrics...", avg_psnr, val_step)
                         wandb_logger.log_metrics({
                             'validation/val_psnr': avg_psnr,
                             'validation/val_step': val_step
