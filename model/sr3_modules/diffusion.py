@@ -70,12 +70,15 @@ class GaussianDiffusion(nn.Module):
         loss_type='l1',
         conditional=True,
         schedule_opt=None,
-        output_size=512
+        output_size=512,
+        use_3d=False
     ):
         super().__init__()
         self.channels = channels
         self.image_size = image_size
         self.output_size = output_size  # is this the same as image_size?
+        self.use_3d = use_3d
+
         self.denoise_fn = denoise_fn
         self.loss_type = loss_type
         self.conditional = conditional
@@ -242,10 +245,9 @@ class GaussianDiffusion(nn.Module):
         if not self.conditional:
             x_recon = self.denoise_fn(x_noisy, continuous_sqrt_alpha_cumprod)
         else:
-            use_3d = False
-            if use_3d:
+            if self.use_3d:
                 x_recon = self.denoise_fn(
-                    torch.cat([x_in['SR'], x_noisy.unsqueeze(0)], dim=1), continuous_sqrt_alpha_cumprod)
+                    torch.cat([x_in['SR'], x_noisy.unsqueeze(1)], dim=1), continuous_sqrt_alpha_cumprod)
             else:
                 x_recon = self.denoise_fn(
                     torch.cat([x_in['SR'], x_noisy], dim=1), continuous_sqrt_alpha_cumprod)

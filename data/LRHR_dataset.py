@@ -18,7 +18,7 @@ import glob
 
 class LRHRDataset(Dataset):
     def __init__(self, dataroot, datatype, l_resolution=16, r_resolution=128, split='train', need_LR=False,
-                    n_s2_images=-1, downsample_res=-1, output_size=512, max_tiles=-1, specify_val=True):
+                    n_s2_images=-1, downsample_res=-1, output_size=512, max_tiles=-1, use_3d=False, specify_val=True):
         self.datatype = datatype
         self.l_res = l_resolution
         self.r_res = r_resolution
@@ -28,6 +28,7 @@ class LRHRDataset(Dataset):
         self.downsample_res = downsample_res
         self.output_size = output_size
         self.max_tiles = max_tiles
+        self.use_3d = use_3d
 
         print("SELF.DATATYPE:", self.datatype, " OUTPUT_SIZE:", self.output_size)
 
@@ -152,7 +153,6 @@ class LRHRDataset(Dataset):
             raise NotImplementedError(
                 'data_type [{:s}] is not recognized.'.format(datatype))
 
-        print("Data length:", self.data_len)
 
     def __len__(self):
         return self.data_len
@@ -161,8 +161,6 @@ class LRHRDataset(Dataset):
         img_HR = None
         img_LR = None
 
-        print("Loading...", index)
-
         # Conditioning on S2, or S2 and downsampled NAIP.
         if self.datatype == 's2' or self.datatype == 's2_and_downsampled_naip' or self.datatype == 'just-s2':
 
@@ -170,6 +168,8 @@ class LRHRDataset(Dataset):
             counter = 0
             while True:
                 index += counter  # increment the index based on what errors have been caught
+                if index >= self.data_len:
+                    index = 0
 
                 datapoint = self.datapoints[index]
                 naip_path, s2_path = datapoint[0], datapoint[1]
@@ -268,8 +268,7 @@ class LRHRDataset(Dataset):
                     [s2_chunks, img_HR] = Util.transform_augment(
                                     [s2_chunks, naip_chip], split=self.split, min_max=(-1, 1), multi_s2=True)
 
-                    use_3d = False
-                    if use_3d:
+                    if self.use_3d:
                         img_SR = torch.stack(s2_chunks)
                     else:
                         img_SR = torch.cat(s2_chunks)

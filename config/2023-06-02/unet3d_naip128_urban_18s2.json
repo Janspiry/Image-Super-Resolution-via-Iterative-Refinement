@@ -1,0 +1,79 @@
+{
+    "name": "18S2-naip128-urban-unet3d",
+    "phase": "train", // train or val
+    "gpu_ids": [
+        0,1,2,3
+    ],
+    "path": { //set the path
+        "log": "/data/piperw/experiments/18S2-naip128-urban-unet3d/logs",
+        "tb_logger": "/data/piperw/experiments/18S2-naip128-urban-unet3d/tb_logger",
+        "results": "/data/piperw/experiments/18S2-naip128-urban-unet3d/results",
+        "checkpoint": "/data/piperw/experiments/18S2-naip128-urban-unet3d/checkpoint",
+        "resume_state": null
+    },
+    "datasets": {
+	"use_3d": true,
+	"output_size": 128,
+        "train": {
+            "name": "S2-NAIP",
+	    "dataroot": "/data/piperw/urban_set/",
+            "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
+            "batch_size": 128,
+            "num_workers": 64,
+            "use_shuffle": true,
+            "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint
+        },
+        "val": {
+            "name": "S2-NAIP",
+            "dataroot": "/data/piperw/held_out_set/",
+            "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
+            "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint
+        }
+    },
+    "model": {
+        "which_model_G": "sr3", // use the ddpm or sr3 network structure
+        "finetune_norm": false,
+        "unet_3d": {
+            "in_channel": 3,
+            "out_channel": 3,
+            "channel_multiplier": [
+                4,
+                8,
+                16,
+		32
+            ]
+        },
+        "beta_schedule": { // use munual beta_schedule for acceleration
+            "train": {
+                "schedule": "linear",
+                "n_timestep": 2000,
+                "linear_start": 1e-6,
+                "linear_end": 1e-2
+            },
+            "val": {
+                "schedule": "linear",
+                "n_timestep": 2000,
+                "linear_start": 1e-6,
+                "linear_end": 1e-2
+            }
+        },
+        "diffusion": {
+	    "image_size": 128,
+            "channels": 3, //sample channel
+            "conditional": true // unconditional generation or unconditional generation(super_resolution)
+        }
+    },
+    "train": {
+        "n_iter": 10000000,
+        "val_freq": 2e4,
+        "save_checkpoint_freq": 2e4,
+        "print_freq": 2000,
+        "optimizer": {
+            "type": "adam",
+            "lr": 1e-4
+        }
+    },
+    "wandb": {
+        "project": "multisat"
+    }
+}

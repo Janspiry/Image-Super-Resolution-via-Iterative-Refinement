@@ -56,7 +56,7 @@ if __name__ == "__main__":
     datatype = opt['datasets']['train']['datatype']
     for phase, dataset_opt in opt['datasets'].items():
         if phase == 'train' and args.phase != 'val':
-            train_set = Data.create_dataset(dataset_opt, phase, output_size=output_size)
+            train_set = Data.create_dataset(dataset_opt, phase, output_size=output_size, use_3d=bool(opt['datasets']['use_3d']))
             train_loader = Data.create_dataloader(
                 train_set, dataset_opt, phase)
         elif phase == 'val':
