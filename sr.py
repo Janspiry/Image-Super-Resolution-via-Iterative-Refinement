@@ -60,7 +60,7 @@ if __name__ == "__main__":
             train_loader = Data.create_dataloader(
                 train_set, dataset_opt, phase)
         elif phase == 'val':
-            val_set = Data.create_dataset(dataset_opt, phase, output_size=output_size)
+            val_set = Data.create_dataset(dataset_opt, phase, output_size=output_size, use_3d=bool(opt['datasets']['use_3d']))
             val_loader = Data.create_dataloader(
                 val_set, dataset_opt, phase)
     logger.info('Initial Dataset Finished')
