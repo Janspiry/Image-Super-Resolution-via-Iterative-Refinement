@@ -66,6 +66,7 @@ class DDPM(BaseModel):
                 self.SR = self.netG.module.super_resolution(
                     self.data['SR'], continous)
             else:
+                print("self.data[SR]:", self.data['SR'].shape)
                 self.SR = self.netG.super_resolution(
                     self.data['SR'], continous)
         self.netG.train()

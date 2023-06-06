@@ -90,7 +90,6 @@ class LRHRDataset(Dataset):
                 if self.max_tiles != -1 and len(self.datapoints) >= self.max_tiles:
                     break
 
-
             #NOTE: hardcoded paths for when you want to run inference on specific tiles
             """
             self.datapoints = []
