@@ -90,87 +90,18 @@ class GaussianDiffusion(nn.Module):
 
         self.is_ddim_sampling = True
         self.num_timesteps = 2000
-        self.sampling_timesteps = 20
+        self.sampling_timesteps = 200
         self.objective = 'pred_noise'
         self.ddim_sampling_eta = 0.0
         schedule_fn_kwargs = dict()
-        self.auto_normalize = True
+        auto_normalize = True
 
         if schedule_opt is not None:
             pass
             # self.set_new_noise_schedule(schedule_opt)
 
-        """
-        beta_schedule_fn = self.linear_beta_schedule  #sigmoid_beta_schedule
-        betas = beta_schedule_fn(self.num_timesteps) #, **schedule_fn_kwargs)
-
-        alphas = 1. - betas
-        alphas_cumprod = torch.cumprod(alphas, dim=0)
-        alphas_cumprod_prev = F.pad(alphas_cumprod[:-1], (1, 0), value = 1.)
-
-        timesteps, = betas.shape
-        self.num_timesteps = int(timesteps)
-
-        # sampling related parameters
-
-        self.sampling_timesteps = default(sampling_timesteps, timesteps) # default num sampling timesteps to number of timesteps at training
-
-        assert self.sampling_timesteps <= timesteps
-        self.is_ddim_sampling = self.sampling_timesteps < timesteps
-        self.ddim_sampling_eta = ddim_sampling_eta
-
-        # helper function to register buffer from float64 to float32
-
-        register_buffer = lambda name, val: self.register_buffer(name, val.to(torch.float32))
-
-        register_buffer('betas', betas)
-        register_buffer('alphas_cumprod', alphas_cumprod)
-        register_buffer('alphas_cumprod_prev', alphas_cumprod_prev)
-
-        # calculations for diffusion q(x_t | x_{t-1}) and others
-
-        register_buffer('sqrt_alphas_cumprod', torch.sqrt(alphas_cumprod))
-        register_buffer('sqrt_one_minus_alphas_cumprod', torch.sqrt(1. - alphas_cumprod))
-        register_buffer('log_one_minus_alphas_cumprod', torch.log(1. - alphas_cumprod))
-        register_buffer('sqrt_recip_alphas_cumprod', torch.sqrt(1. / alphas_cumprod))
-        register_buffer('sqrt_recipm1_alphas_cumprod', torch.sqrt(1. / alphas_cumprod - 1))
-
-        # calculations for posterior q(x_{t-1} | x_t, x_0)
-
-        posterior_variance = betas * (1. - alphas_cumprod_prev) / (1. - alphas_cumprod)
-
-        # above: equal to 1. / (1. / (1. - alpha_cumprod_tm1) + alpha_t / beta_t)
-
-        register_buffer('posterior_variance', posterior_variance)
-
-        # below: log calculation clipped because the posterior variance is 0 at the beginning of the diffusion chain
-
-        register_buffer('posterior_log_variance_clipped', torch.log(posterior_variance.clamp(min =1e-20)))
-        register_buffer('posterior_mean_coef1', betas * torch.sqrt(alphas_cumprod_prev) / (1. - alphas_cumprod))
-        register_buffer('posterior_mean_coef2', (1. - alphas_cumprod_prev) * torch.sqrt(alphas) / (1. - alphas_cumprod))
-
-        # loss weight
-
-        snr = alphas_cumprod / (1 - alphas_cumprod)
-
-        maybe_clipped_snr = snr.clone()
-        #if min_snr_loss_weight:
-        #    maybe_clipped_snr.clamp_(max = min_snr_gamma)
-
-        #if objective == 'pred_noise':
-        #    loss_weight = maybe_clipped_snr / snr
-        #elif objective == 'pred_x0':
-        #    loss_weight = maybe_clipped_snr
-        #elif objective == 'pred_v':
-        #    loss_weight = maybe_clipped_snr / (snr + 1)
-
-        #register_buffer('loss_weight', loss_weight)
-
-        # auto-normalization of data [0, 1] -> [-1, 1] - can turn off by setting it to be False
-
         self.normalize = normalize_to_neg_one_to_one if auto_normalize else identity
         self.unnormalize = unnormalize_to_zero_to_one if auto_normalize else identity
-        """
 
 
     def set_loss(self, device):
@@ -230,15 +161,6 @@ class GaussianDiffusion(nn.Module):
         self.register_buffer('posterior_mean_coef2', to_torch(
             (1. - alphas_cumprod_prev) * np.sqrt(alphas) / (1. - alphas_cumprod)))
 
-    def linear_beta_schedule(self, timesteps):
-        """
-        linear schedule, proposed in original ddpm paper
-        """
-        scale = 1000 / timesteps
-        beta_start = scale * 0.000001
-        beta_end = scale * 0.01
-        return torch.linspace(beta_start, beta_end, timesteps, dtype = torch.float64)
-
     def predict_start_from_noise(self, x_t, t, noise):
         return self.sqrt_recip_alphas_cumprod[t] * x_t - \
             self.sqrt_recipm1_alphas_cumprod[t] * noise
@@ -249,31 +171,46 @@ class GaussianDiffusion(nn.Module):
         posterior_log_variance_clipped = self.posterior_log_variance_clipped[t]
         return posterior_mean, posterior_log_variance_clipped
 
-    def p_mean_variance(self, x, t, clip_denoised: bool, condition_x=None):
+    def p_mean_variance(self, x, t, clip_denoised: bool, condition_x=None, inference=False):
         batch_size = x.shape[0]
         noise_level = torch.FloatTensor(
             [self.sqrt_alphas_cumprod_prev[t+1]]).repeat(batch_size, 1).to(x.device)
 
-        if condition_x is not None:
-            x_recon = self.predict_start_from_noise(
-                    x, t=t, noise=self.denoise_fn(torch.cat([condition_x, x], dim=1), noise_level))
+        if inference:
+            pred_noise = self.denoise_fn(torch.cat([condition_x, x], dim=1), noise_level)
+            x_recon = self.predict_start_from_noise(x, t=t, noise=pred_noise)
+
         else:
-            x_recon = self.predict_start_from_noise(
-                x, t=t, noise=self.denoise_fn(x, noise_level))
+            if condition_x is not None:
+                x_recon = self.predict_start_from_noise(
+                        x, t=t, noise=self.denoise_fn(torch.cat([condition_x, x], dim=1), noise_level))
+            else:
+                x_recon = self.predict_start_from_noise(
+                    x, t=t, noise=self.denoise_fn(x, noise_level))
 
         if clip_denoised:
             x_recon.clamp_(-1., 1.)
 
         model_mean, posterior_log_variance = self.q_posterior(
             x_start=x_recon, x_t=x, t=t)
-        return model_mean, posterior_log_variance, x_recon
+
+        if inference:
+            return model_mean, posterior_log_variance, x_recon, pred_noise
+        else:
+            return model_mean, posterior_log_variance
 
     @torch.no_grad()
-    def p_sample(self, x, t, clip_denoised=True, condition_x=None):
-        model_mean, model_log_variance, x_recon = self.p_mean_variance(
-            x=x, t=t, clip_denoised=clip_denoised, condition_x=condition_x)
-        noise = torch.randn_like(x) if t > 0 else torch.zeros_like(x)
-        return model_mean + noise * (0.5 * model_log_variance).exp(), x_recon
+    def p_sample(self, x, t, clip_denoised=True, condition_x=None, inference=False):
+        if inference:
+            model_mean, model_log_variance, x_recon, pred_noise = self.p_mean_variance(
+                x=x, t=t, clip_denoised=clip_denoised, condition_x=condition_x, inference=inference)
+            noise = torch.randn_like(x) if t > 0 else torch.zeros_like(x)
+            return model_mean + noise * (0.5 * model_log_variance).exp(), x_recon, pred_noise
+        else:
+            model_mean, model_log_variance = self.p_mean_variance(
+                x=x, t=t, clip_denoised=clip_denoised, condition_x=condition_x, inference=inference)
+            noise = torch.randn_like(x) if t > 0 else torch.zeros_like(x)
+            return model_mean + noise * (0.5 * model_log_variance).exp()
 
     @torch.no_grad()
     def p_sample_loop(self, x_in, continous=False):
@@ -311,8 +248,6 @@ class GaussianDiffusion(nn.Module):
 
     @torch.no_grad()
     def ddim_sample(self, x_in, continuous=False, cond_fn=None, guidance_kwargs=None):
-        print("x_in:", x_in.shape)
-
         shape = x_in.shape
         batch = shape[0]
         device = self.betas.device
@@ -334,13 +269,7 @@ class GaussianDiffusion(nn.Module):
             time_cond = torch.full((batch,), time, device = device, dtype = torch.long)
             self_cond = x_start if self.conditional else None
 
-            x_start, pred_noise = self.p_sample(img, time, condition_x=x_in)
-            """
-            noise_level = torch.FloatTensor(
-                [self.sqrt_one_minus_alphas_cumprod[time_next]]).repeat(batch, 1).to(device)
-            pred_noise = self.denoise_fn(torch.cat([x_in, img], dim=1), noise_level)
-            x_start = self.predict_start_from_noise(img, time_cond, pred_noise)
-            """
+            _, x_start, pred_noise = self.p_sample(img, time, condition_x=x_in, inference=True)
 
             imgs.append(img)
 
@@ -359,10 +288,8 @@ class GaussianDiffusion(nn.Module):
             img = x_start * alpha_next.sqrt() + \
                   c * pred_noise + \
                   sigma * noise
-            print("img * a lot of things:", img.shape)
 
         ret = img if not continuous else torch.stack(imgs, dim = 1)
-        #ret = self.unnormalize(ret)
         return ret
 
     @torch.no_grad()
@@ -373,7 +300,6 @@ class GaussianDiffusion(nn.Module):
 
     @torch.no_grad()
     def super_resolution(self, x_in, continous=False):
-        print("x in:", x_in.shape)
         sample_fn = self.p_sample_loop if not self.is_ddim_sampling else self.ddim_sample
         return sample_fn(x_in, continous)
 
