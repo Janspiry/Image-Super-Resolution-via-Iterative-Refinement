@@ -90,17 +90,17 @@ class GaussianDiffusion(nn.Module):
 
         self.is_ddim_sampling = True
         self.num_timesteps = 2000
-        sampling_timesteps = 50
-        objective = 'pred_noise'
-        self.objective = objective
-        ddim_sampling_eta = 0.0
+        self.sampling_timesteps = 20
+        self.objective = 'pred_noise'
+        self.ddim_sampling_eta = 0.0
         schedule_fn_kwargs = dict()
-        auto_normalize = True
+        self.auto_normalize = True
 
         if schedule_opt is not None:
             pass
             # self.set_new_noise_schedule(schedule_opt)
 
+        """
         beta_schedule_fn = self.linear_beta_schedule  #sigmoid_beta_schedule
         betas = beta_schedule_fn(self.num_timesteps) #, **schedule_fn_kwargs)
 
@@ -170,6 +170,7 @@ class GaussianDiffusion(nn.Module):
 
         self.normalize = normalize_to_neg_one_to_one if auto_normalize else identity
         self.unnormalize = unnormalize_to_zero_to_one if auto_normalize else identity
+        """
 
 
     def set_loss(self, device):
@@ -181,7 +182,6 @@ class GaussianDiffusion(nn.Module):
             raise NotImplementedError()
 
     def set_new_noise_schedule(self, schedule_opt, device):
-        return
         to_torch = partial(torch.tensor, dtype=torch.float32, device=device)
 
         betas = make_beta_schedule(
@@ -230,21 +230,6 @@ class GaussianDiffusion(nn.Module):
         self.register_buffer('posterior_mean_coef2', to_torch(
             (1. - alphas_cumprod_prev) * np.sqrt(alphas) / (1. - alphas_cumprod)))
 
-    def sigmoid_beta_schedule(self, timesteps, start = -3, end = 3, tau = 1, clamp_min = 1e-5):
-        """
-        sigmoid schedule
-        proposed in https://arxiv.org/abs/2212.11972 - Figure 8
-        better for images > 64x64, when used during training
-        """
-        steps = timesteps + 1
-        t = torch.linspace(0, timesteps, steps, dtype = torch.float64) / timesteps
-        v_start = torch.tensor(start / tau).sigmoid()
-        v_end = torch.tensor(end / tau).sigmoid()
-        alphas_cumprod = (-((t * (end - start) + start) / tau).sigmoid() + v_end) / (v_end - v_start)
-        alphas_cumprod = alphas_cumprod / alphas_cumprod[0]
-        betas = 1 - (alphas_cumprod[1:] / alphas_cumprod[:-1])
-        return torch.clip(betas, 0, 0.999)
-
     def linear_beta_schedule(self, timesteps):
         """
         linear schedule, proposed in original ddpm paper
@@ -281,14 +266,14 @@ class GaussianDiffusion(nn.Module):
 
         model_mean, posterior_log_variance = self.q_posterior(
             x_start=x_recon, x_t=x, t=t)
-        return model_mean, posterior_log_variance
+        return model_mean, posterior_log_variance, x_recon
 
     @torch.no_grad()
     def p_sample(self, x, t, clip_denoised=True, condition_x=None):
-        model_mean, model_log_variance = self.p_mean_variance(
+        model_mean, model_log_variance, x_recon = self.p_mean_variance(
             x=x, t=t, clip_denoised=clip_denoised, condition_x=condition_x)
         noise = torch.randn_like(x) if t > 0 else torch.zeros_like(x)
-        return model_mean + noise * (0.5 * model_log_variance).exp()
+        return model_mean + noise * (0.5 * model_log_variance).exp(), x_recon
 
     @torch.no_grad()
     def p_sample_loop(self, x_in, continous=False):
@@ -326,6 +311,8 @@ class GaussianDiffusion(nn.Module):
 
     @torch.no_grad()
     def ddim_sample(self, x_in, continuous=False, cond_fn=None, guidance_kwargs=None):
+        print("x_in:", x_in.shape)
+
         shape = x_in.shape
         batch = shape[0]
         device = self.betas.device
@@ -347,11 +334,13 @@ class GaussianDiffusion(nn.Module):
             time_cond = torch.full((batch,), time, device = device, dtype = torch.long)
             self_cond = x_start if self.conditional else None
 
-            #noise_level = torch.FloatTensor(
-            #    [self.sqrt_one_minus_alphas_cumprod[time]]).repeat(batch, 1).to(device)
-
-            pred_noise = self.denoise_fn(torch.cat([x_in, img], dim=1), time_cond)
+            x_start, pred_noise = self.p_sample(img, time, condition_x=x_in)
+            """
+            noise_level = torch.FloatTensor(
+                [self.sqrt_one_minus_alphas_cumprod[time_next]]).repeat(batch, 1).to(device)
+            pred_noise = self.denoise_fn(torch.cat([x_in, img], dim=1), noise_level)
             x_start = self.predict_start_from_noise(img, time_cond, pred_noise)
+            """
 
             imgs.append(img)
 
@@ -370,6 +359,7 @@ class GaussianDiffusion(nn.Module):
             img = x_start * alpha_next.sqrt() + \
                   c * pred_noise + \
                   sigma * noise
+            print("img * a lot of things:", img.shape)
 
         ret = img if not continuous else torch.stack(imgs, dim = 1)
         #ret = self.unnormalize(ret)
