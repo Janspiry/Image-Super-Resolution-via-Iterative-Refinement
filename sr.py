@@ -10,6 +10,7 @@ from tensorboardX import SummaryWriter
 import os
 import numpy as np
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', type=str, default='config/sr_sr3_16_128.json',
@@ -51,6 +52,7 @@ if __name__ == "__main__":
         wandb_logger = None
     
     output_size = opt['datasets']['output_size'] if 'output_size' in opt['datasets'] else 512
+    use_3d = bool(opt['datasets']['use_3d'])
 
     # dataset
     datatype = opt['datasets']['train']['datatype']
@@ -86,8 +88,9 @@ if __name__ == "__main__":
         logger.info('Resuming training from epoch: {}, iter: {}.'.format(
             current_epoch, current_step))
 
+    # Attempting to have both the original scheduling option (DDPM) and the huggingface DDIM implementation here.
     diffusion.set_new_noise_schedule(
-        opt['model']['beta_schedule'][opt['phase']], schedule_phase=opt['phase'])
+    	opt['model']['beta_schedule'][opt['phase']], schedule_phase=opt['phase'])
 
     if opt['phase'] == 'train':
         while current_step < n_iter:
@@ -171,13 +174,19 @@ if __name__ == "__main__":
                             if s2_img.shape[0] > 3:
                                 s2_img = s2_img[:, :, :3]
 
-                            fake_img = s2_img
+                            fake_img = s2_img # placeholder
 
                             Metrics.save_img(
 				hr_img, '{}/{}_{}_hr.png'.format(result_path, current_step, idx))
                             Metrics.save_img(
 				sr_img, '{}/{}_{}_sr.png'.format(result_path, current_step, idx))
-                            Metrics.save_img(s2_img, '{}/{}_{}_s2.png'.format(result_path, current_step, idx))
+
+                            if use_3d:
+                                # NOTE: unet_3d not properly saving s2_img, shape is (332, 266, 3) ?
+                                fake_img = torch.rand((64,64,3))
+                            else:
+                                fake_img = s2_img
+                                Metrics.save_img(s2_img, '{}/{}_{}_s2.png'.format(result_path, current_step, idx))
 
                         # NAIP generation based on S2 + downsampled NAIP conditioning.
                         elif datatype == 's2_and_downsampled_naip':
