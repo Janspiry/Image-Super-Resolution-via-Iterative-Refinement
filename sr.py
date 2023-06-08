@@ -21,6 +21,7 @@ if __name__ == "__main__":
     parser.add_argument('-enable_wandb', action='store_true')
     parser.add_argument('-log_wandb_ckpt', action='store_true')
     parser.add_argument('-log_eval', action='store_true')
+    parser.add_argument('-auto_resume', action='store_true')
     
     # parse configs
     args = parser.parse_args()
@@ -73,13 +74,14 @@ if __name__ == "__main__":
     current_step = diffusion.begin_step
     current_epoch = diffusion.begin_epoch
     n_iter = opt['train']['n_iter']
+    print("current step:", current_step, " current epoch:", current_epoch)
 
     # FOR BEAKER: check if there is an existing "last" checkpoint within this experiment results dir.
-    last_gen_check = os.path.join(opt['path']['checkpoint'], 'last_gen.pth')
-    last_opt_check = os.path.join(opt['path']['checkpoint'], 'last_opt.pth')
-    if os.path.exists(last_gen_check) and os.path.exists(last_opt_check):
-        print("Resuming from last checkpoints...", last_gen_check, " and ", last_opt_check)
-        opt['path']['resume_state'] = os.path.join(opt['path']['checkpoint'], 'last')
+    #last_gen_check = os.path.join(opt['path']['checkpoint'], 'last_gen.pth')
+    #last_opt_check = os.path.join(opt['path']['checkpoint'], 'last_opt.pth')
+    #if os.path.exists(last_gen_check) and os.path.exists(last_opt_check):
+    #    print("Resuming from last checkpoints...", last_gen_check, " and ", last_opt_check)
+    #    opt['path']['resume_state'] = os.path.join(opt['path']['checkpoint'], 'last')
 
     # If not resuming from last checkpoint and just trying to load in weights, it should default to here.
     elif (opt['path']['resume_gen_state'] and opt['path']['resume_opt_state']) or opt['path']['resume_state']:
