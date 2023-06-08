@@ -55,6 +55,9 @@ if __name__ == "__main__":
     output_size = opt['datasets']['output_size'] if 'output_size' in opt['datasets'] else 512
     use_3d = bool(opt['datasets']['use_3d'])
 
+    # sampler
+    if 
+
     # dataset
     datatype = opt['datasets']['train']['datatype']
     for phase, dataset_opt in opt['datasets'].items():
@@ -77,6 +80,9 @@ if __name__ == "__main__":
         for chkpt in os.listdir(chkpt_path):
             # Just gonna look for opt weights so we don't repeatedly look.
             if chkpt.endswith('gen.pth'):
+                continue
+            # Skipping the last checkpoints.
+            if chkpt == 'last_opt.pth':
                 continue
             split = chkpt.split('_')
             iterations = int(split[0][1:])

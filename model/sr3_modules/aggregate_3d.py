@@ -3,6 +3,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from inspect import isfunction
+from einops.layers.torch import Reduce
 
 
 def exists(x):
@@ -233,40 +234,47 @@ class UNet(nn.Module):
 
         self.final_conv = Block(pre_channel, default(out_channel, in_channel), groups=norm_groups)
 
+        # Few layers to send in individual S2 images + the noise, then aggregate these along the time dimension.
+        self.indiv1 = nn.Conv2d(6, 64, 3, 1, 1)
+        self.indiv2 = nn.Conv2d(64, 64, 3, 1, 1)
+        self.lrelu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
+        self.max_pool = Reduce('b t c h w -> b 1 c h w', 'max')
+
     def forward(self, x, time):
 
         t = self.noise_level_mlp(time) if exists(
             self.noise_level_mlp) else None
 
         # Send each of the S2 images through the 2D unet individually, then aggregate (max pool) features.
+        s2_feats = []
         noisy_highres = x[:, 0:3, :, :]
-        print("noisy:", noisy_highres.shape)
-        s2_features = []
         for ts in range(3, x.shape[1], 3):
             cur = torch.cat((noisy_highres, x[:, ts:ts+3, :, :]), dim=1)
+            cur = self.lrelu(self.indiv1(cur))
+            cur = self.lrelu(self.indiv2(cur))
+            s2_feats.append(cur)
 
-            feats = []
-            for layer in self.downs:
-                if isinstance(layer, ResnetBlocWithAttn):
-                    cur = layer(cur, t)
-                else:
-                    cur = layer(cur)
-                feats.append(cur)
+        agg = torch.stack(s2_feats, dim=1)
+        x = self.max_pool(agg).squeeze(1)
 
-            for layer in self.mid:
-                if isinstance(layer, ResnetBlocWithAttn):
-                    cur = layer(cur, t)
-                else:
-                    cur = layer(cur)
+        feats = []
+        for layer in self.downs:
+            if isinstance(layer, ResnetBlocWithAttn):
+                x = layer(x, t)
+            else:
+                x = layer(x)
+            feats.append(x)
 
-            for layer in self.ups:
-                if isinstance(layer, ResnetBlocWithAttn):
-                    cur = layer(torch.cat((cur, feats.pop()), dim=1), t)
-                else:
-                    cur = layer(cur)
+        for layer in self.mid:
+            if isinstance(layer, ResnetBlocWithAttn):
+                x = layer(x, t)
+            else:
+                x = layer(x)
 
-            s2_features.append(cur)
-
-        print("len(s2_features):", len(s2_features))
+        for layer in self.ups:
+            if isinstance(layer, ResnetBlocWithAttn):
+                x = layer(torch.cat((x, feats.pop()), dim=1), t)
+            else:
+                x = layer(x)
 
         return self.final_conv(x)

@@ -17,7 +17,7 @@
             "name": "S2-NAIP",
 	    "dataroot": "/data/piperw/urban_set/",
             "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
-            "batch_size": 16,
+            "batch_size": 32,
             "num_workers": 8,
             "use_shuffle": true,
             "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint
@@ -33,7 +33,7 @@
         "which_model_G": "sr3", // use the ddpm or sr3 network structure
         "finetune_norm": false,
         "aggregate_3d": {
-            "in_channel": 6,
+            "in_channel": 64,
             "out_channel": 3,
             "inner_channel": 64,
             "channel_multiplier": [
