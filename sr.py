@@ -73,6 +73,10 @@ if __name__ == "__main__":
     # otherwise will not load any weight in (not even the last_opt.th and last_gen.pth).
     if args.auto_resume:
         chkpt_path = opt['path']['checkpoint']
+
+        if len(os.listdir(chkpt_path)) == 0 or chpkt_path is None:
+            continue
+
         best_weight, best_iters = None, 0
         for chkpt in os.listdir(chkpt_path):
             # Just gonna look for opt weights so we don't repeatedly look.
@@ -85,10 +89,6 @@ if __name__ == "__main__":
             if iterations > best_iters:
                 best_weight = chkpt
                 best_iters = iterations
-        if not 'resume_state' in opt['path']:
-            opt['path']['resume_state'] = ''
-        print(opt['path']['resume_state'])
-        print(opt['path']['checkpoint'])
         opt['path']['resume_state'] = os.path.join(opt['path']['checkpoint'], best_weight[:-8])
 
     # model
