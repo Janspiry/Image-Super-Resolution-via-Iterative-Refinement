@@ -60,6 +60,11 @@ def default(val, d):
         return val
     return d() if isfunction(d) else d
 
+def normalize_to_neg_one_to_one(img):
+    return img * 2 - 1
+
+def unnormalize_to_zero_to_one(t):
+    return (t + 1) * 0.5
 
 class GaussianDiffusion(nn.Module):
     def __init__(
@@ -82,9 +87,22 @@ class GaussianDiffusion(nn.Module):
         self.denoise_fn = denoise_fn
         self.loss_type = loss_type
         self.conditional = conditional
+
+        self.is_ddim_sampling = True
+        self.num_timesteps = 2000
+        self.sampling_timesteps = 200
+        self.objective = 'pred_noise'
+        self.ddim_sampling_eta = 0.0
+        schedule_fn_kwargs = dict()
+        auto_normalize = True
+
         if schedule_opt is not None:
             pass
             # self.set_new_noise_schedule(schedule_opt)
+
+        self.normalize = normalize_to_neg_one_to_one if auto_normalize else identity
+        self.unnormalize = unnormalize_to_zero_to_one if auto_normalize else identity
+
 
     def set_loss(self, device):
         if self.loss_type == 'l1':
@@ -153,34 +171,51 @@ class GaussianDiffusion(nn.Module):
         posterior_log_variance_clipped = self.posterior_log_variance_clipped[t]
         return posterior_mean, posterior_log_variance_clipped
 
-    def p_mean_variance(self, x, t, clip_denoised: bool, condition_x=None):
+    def p_mean_variance(self, x, t, clip_denoised: bool, condition_x=None, inference=False):
         batch_size = x.shape[0]
         noise_level = torch.FloatTensor(
             [self.sqrt_alphas_cumprod_prev[t+1]]).repeat(batch_size, 1).to(x.device)
-        if condition_x is not None:
-            x_recon = self.predict_start_from_noise(
-                x, t=t, noise=self.denoise_fn(torch.cat([condition_x, x], dim=1), noise_level))
+
+        if inference:
+            pred_noise = self.denoise_fn(torch.cat([condition_x, x], dim=1), noise_level)
+            x_recon = self.predict_start_from_noise(x, t=t, noise=pred_noise)
+
         else:
-            x_recon = self.predict_start_from_noise(
-                x, t=t, noise=self.denoise_fn(x, noise_level))
+            if condition_x is not None:
+                x_recon = self.predict_start_from_noise(
+                        x, t=t, noise=self.denoise_fn(torch.cat([condition_x, x], dim=1), noise_level))
+            else:
+                x_recon = self.predict_start_from_noise(
+                    x, t=t, noise=self.denoise_fn(x, noise_level))
 
         if clip_denoised:
             x_recon.clamp_(-1., 1.)
 
         model_mean, posterior_log_variance = self.q_posterior(
             x_start=x_recon, x_t=x, t=t)
-        return model_mean, posterior_log_variance
+
+        if inference:
+            return model_mean, posterior_log_variance, x_recon, pred_noise
+        else:
+            return model_mean, posterior_log_variance
 
     @torch.no_grad()
-    def p_sample(self, x, t, clip_denoised=True, condition_x=None):
-        model_mean, model_log_variance = self.p_mean_variance(
-            x=x, t=t, clip_denoised=clip_denoised, condition_x=condition_x)
-        noise = torch.randn_like(x) if t > 0 else torch.zeros_like(x)
-        return model_mean + noise * (0.5 * model_log_variance).exp()
+    def p_sample(self, x, t, clip_denoised=True, condition_x=None, inference=False):
+        if inference:
+            model_mean, model_log_variance, x_recon, pred_noise = self.p_mean_variance(
+                x=x, t=t, clip_denoised=clip_denoised, condition_x=condition_x, inference=inference)
+            noise = torch.randn_like(x) if t > 0 else torch.zeros_like(x)
+            return model_mean + noise * (0.5 * model_log_variance).exp(), x_recon, pred_noise
+        else:
+            model_mean, model_log_variance = self.p_mean_variance(
+                x=x, t=t, clip_denoised=clip_denoised, condition_x=condition_x, inference=inference)
+            noise = torch.randn_like(x) if t > 0 else torch.zeros_like(x)
+            return model_mean + noise * (0.5 * model_log_variance).exp()
 
     @torch.no_grad()
     def p_sample_loop(self, x_in, continous=False):
         device = self.betas.device
+
         sample_inter = (1 | (self.num_timesteps//10))
         if not self.conditional:
             shape = x_in
@@ -192,7 +227,13 @@ class GaussianDiffusion(nn.Module):
                     ret_img = torch.cat([ret_img, img], dim=0)
         else:
             x = x_in
-            shape = (1, 3, self.output_size, self.output_size)  # For when condioning isn't the same shape as desired output
+
+            # Specifying shape because our conditioning is often not the same shape as desired output.
+            if self.use_3d:
+                shape = (1, 1, 3, self.output_size, self.output_size)
+            else: 
+                shape = (1, 3, self.output_size, self.output_size)
+
             img = torch.randn(shape, device=device)
             ret_img = img # img instead of x?
             for i in tqdm(reversed(range(0, self.num_timesteps)), desc='sampling loop time step', total=self.num_timesteps):
@@ -206,6 +247,52 @@ class GaussianDiffusion(nn.Module):
             return ret_img[-1]
 
     @torch.no_grad()
+    def ddim_sample(self, x_in, continuous=False, cond_fn=None, guidance_kwargs=None):
+        shape = x_in.shape
+        batch = shape[0]
+        device = self.betas.device
+        total_timesteps = self.num_timesteps
+        sampling_timesteps = self.sampling_timesteps
+        eta = self.ddim_sampling_eta
+        objective = self.objective
+
+        times = torch.linspace(-1, total_timesteps - 1, steps = sampling_timesteps + 1)   # [-1, 0, 1, 2, ..., T-1] when sampling_timesteps == total_timesteps
+        times = list(reversed(times.int().tolist()))
+        time_pairs = list(zip(times[:-1], times[1:])) # [(T-1, T-2), (T-2, T-3), ..., (1, 0), (0, -1)]
+
+        img = torch.randn((1, 3, self.output_size, self.output_size), device=device)
+        imgs = [img]
+
+        x_start = None
+
+        for time, time_next in tqdm(time_pairs, desc = 'sampling loop time step'):
+            time_cond = torch.full((batch,), time, device = device, dtype = torch.long)
+            self_cond = x_start if self.conditional else None
+
+            _, x_start, pred_noise = self.p_sample(img, time, condition_x=x_in, inference=True)
+
+            imgs.append(img)
+
+            if time_next < 0:
+                img = x_start
+                continue
+
+            alpha = self.alphas_cumprod[time]
+            alpha_next = self.alphas_cumprod[time_next]
+
+            sigma = eta * ((1 - alpha / alpha_next) * (1 - alpha_next) / (1 - alpha)).sqrt()
+            c = (1 - alpha_next - sigma ** 2).sqrt()
+
+            noise = torch.randn_like(img)
+
+            img = x_start * alpha_next.sqrt() + \
+                  c * pred_noise + \
+                  sigma * noise
+
+        ret = img if not continuous else torch.stack(imgs, dim = 1)
+        return ret
+
+    @torch.no_grad()
     def sample(self, batch_size=1, continous=False):
         image_size = self.image_size
         channels = self.channels
@@ -213,7 +300,8 @@ class GaussianDiffusion(nn.Module):
 
     @torch.no_grad()
     def super_resolution(self, x_in, continous=False):
-        return self.p_sample_loop(x_in, continous)
+        sample_fn = self.p_sample_loop if not self.is_ddim_sampling else self.ddim_sample
+        return sample_fn(x_in, continous)
 
     def q_sample(self, x_start, continuous_sqrt_alpha_cumprod, noise=None):
         noise = default(noise, lambda: torch.randn_like(x_start))

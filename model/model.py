@@ -66,6 +66,7 @@ class DDPM(BaseModel):
                 self.SR = self.netG.module.super_resolution(
                     self.data['SR'], continous)
             else:
+                print("self.data[SR]:", self.data['SR'].shape)
                 self.SR = self.netG.super_resolution(
                     self.data['SR'], continous)
         self.netG.train()
@@ -191,28 +192,3 @@ class DDPM(BaseModel):
                 self.begin_step = opt['iter']
                 self.begin_epoch = opt['epoch']
             return
-
-        # For resuming the last gen and opt states; specifically for Beaker scenario.
-        load_gen_path = self.opt['path']['resume_gen_state']
-        load_opt_path = self.opt['path']['resume_opt_state']
-        if load_gen_path is not None and load_opt_path is not None:
-
-            if os.path.exists(load_gen_path):
-                logger.info(
-                    'Loading pretrained model for G [{:s}] ...'.format(load_gen_path))
-
-                # gen
-                network = self.netG
-                if isinstance(self.netG, nn.DataParallel):
-                    network = network.module
-                network.load_state_dict(torch.load(
-                    load_gen_path), strict=(not self.opt['model']['finetune_norm']))
-
-            if os.path.exists(load_opt_path):
-                if self.opt['phase'] == 'train':
-                    # optimizer
-                    opt = torch.load(load_opt_path)
-                    self.optG.load_state_dict(opt['optimizer'])
-                    self.begin_step = opt['iter']
-                    self.begin_epoch = opt['epoch']
-

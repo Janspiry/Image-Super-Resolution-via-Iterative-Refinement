@@ -1,15 +1,15 @@
 {
-    "name": "testing",
+    "name": "testing-preemptible",
     "phase": "train", // train or val
     "gpu_ids": [
-        0,1,2,3
+        0
     ],
     "path": { //set the path
-        "log": "/data/piperw/experiments/testing/logs",
-        "tb_logger": "/data/piperw/experiments/testing/tb_logger",
-        "results": "/data/piperw/experiments/testing/results",
-        "checkpoint": "/data/piperw/experiments/18S2-naip128-urban/checkpoint",
-        "resume_state": "/data/piperw/experiments/18S2-naip128-urban/checkpoint/I780000_E354"
+        "log": "/data/piperw/experiments/testing-preemptible/logs",
+        "tb_logger": "/data/piperw/experiments/testing-preemptible/tb_logger",
+        "results": "/data/piperw/experiments/testing-preemptible/results",
+        "checkpoint": "/data/piperw/experiments/testing-preemptible/checkpoint",
+        "resume_state": null 
     },
     "datasets": {
 	"output_size": 128,
@@ -73,8 +73,8 @@
     "train": {
         "n_iter": 10000000,
         "val_freq": 20,
-        "save_checkpoint_freq": 2e4,
-        "print_freq": 2000,
+        "save_checkpoint_freq": 20,
+        "print_freq": 20,
         "optimizer": {
             "type": "adam",
             "lr": 1e-4

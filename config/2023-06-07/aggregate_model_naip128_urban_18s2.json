@@ -1,15 +1,15 @@
 {
-    "name": "testing",
+    "name": "aggregate-18S2-naip128-urban",
     "phase": "train", // train or val
     "gpu_ids": [
         0,1,2,3
     ],
     "path": { //set the path
-        "log": "/data/piperw/experiments/testing/logs",
-        "tb_logger": "/data/piperw/experiments/testing/tb_logger",
-        "results": "/data/piperw/experiments/testing/results",
-        "checkpoint": "/data/piperw/experiments/18S2-naip128-urban/checkpoint",
-        "resume_state": "/data/piperw/experiments/18S2-naip128-urban/checkpoint/I780000_E354"
+        "log": "/data/piperw/experiments/aggregate-18S2-naip128-urban/logs",
+        "tb_logger": "/data/piperw/experiments/aggregate-18S2-naip128-urban/tb_logger",
+        "results": "/data/piperw/experiments/aggregate-18S2-naip128-urban/results",
+        "checkpoint": "/data/piperw/experiments/aggregate-18S2-naip128-urban/checkpoint",
+        "resume_state": null
     },
     "datasets": {
 	"output_size": 128,
@@ -26,15 +26,14 @@
             "name": "S2-NAIP",
             "dataroot": "/data/piperw/held_out_set/",
             "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
-	    "batch_size": 16,
             "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint
         }
     },
     "model": {
         "which_model_G": "sr3", // use the ddpm or sr3 network structure
         "finetune_norm": false,
-        "unet": {
-            "in_channel": 57,
+        "aggregate_3d": {
+            "in_channel": 6,
             "out_channel": 3,
             "inner_channel": 64,
             "channel_multiplier": [
@@ -72,7 +71,7 @@
     },
     "train": {
         "n_iter": 10000000,
-        "val_freq": 20,
+        "val_freq": 2e4,
         "save_checkpoint_freq": 2e4,
         "print_freq": 2000,
         "optimizer": {

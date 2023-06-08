@@ -10,6 +10,7 @@ from tensorboardX import SummaryWriter
 import os
 import numpy as np
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', type=str, default='config/sr_sr3_16_128.json',
@@ -52,6 +53,7 @@ if __name__ == "__main__":
         wandb_logger = None
     
     output_size = opt['datasets']['output_size'] if 'output_size' in opt['datasets'] else 512
+    use_3d = bool(opt['datasets']['use_3d'])
 
     # dataset
     datatype = opt['datasets']['train']['datatype']
@@ -66,6 +68,25 @@ if __name__ == "__main__":
                 val_set, dataset_opt, phase)
     logger.info('Initial Dataset Finished')
 
+    # Manually check for the most recent checkpoint in this results dir.
+    # If auto_resume is not specified, code will load in the resume_state arg if provided,
+    # otherwise will not load any weight in (not even the last_opt.th and last_gen.pth).
+    if args.auto_resume:
+        chkpt_path = opt['path']['checkpoint']
+        best_weight, best_iters = None, 0
+        for chkpt in os.listdir(chkpt_path):
+            # Just gonna look for opt weights so we don't repeatedly look.
+            if chkpt.endswith('gen.pth'):
+                continue
+            split = chkpt.split('_')
+            iterations = int(split[0][1:])
+            epochs = int(split[1][1:])
+
+            if iterations > best_iters:
+                best_weight = chkpt
+                best_iters = iterations
+        opt['path']['resume_state'] = os.path.join(opt['path']['checkpoint'], best_weight[:-8])
+
     # model
     diffusion = Model.create_model(opt)
     logger.info('Initial Model Finished')
@@ -74,22 +95,9 @@ if __name__ == "__main__":
     current_step = diffusion.begin_step
     current_epoch = diffusion.begin_epoch
     n_iter = opt['train']['n_iter']
-    print("current step:", current_step, " current epoch:", current_epoch)
-
-    # FOR BEAKER: check if there is an existing "last" checkpoint within this experiment results dir.
-    #last_gen_check = os.path.join(opt['path']['checkpoint'], 'last_gen.pth')
-    #last_opt_check = os.path.join(opt['path']['checkpoint'], 'last_opt.pth')
-    #if os.path.exists(last_gen_check) and os.path.exists(last_opt_check):
-    #    print("Resuming from last checkpoints...", last_gen_check, " and ", last_opt_check)
-    #    opt['path']['resume_state'] = os.path.join(opt['path']['checkpoint'], 'last')
-
-    # If not resuming from last checkpoint and just trying to load in weights, it should default to here.
-    elif (opt['path']['resume_gen_state'] and opt['path']['resume_opt_state']) or opt['path']['resume_state']:
-        logger.info('Resuming training from epoch: {}, iter: {}.'.format(
-            current_epoch, current_step))
 
     diffusion.set_new_noise_schedule(
-        opt['model']['beta_schedule'][opt['phase']], schedule_phase=opt['phase'])
+    	opt['model']['beta_schedule'][opt['phase']], schedule_phase=opt['phase'])
 
     if opt['phase'] == 'train':
         while current_step < n_iter:
@@ -173,13 +181,19 @@ if __name__ == "__main__":
                             if s2_img.shape[0] > 3:
                                 s2_img = s2_img[:, :, :3]
 
-                            fake_img = s2_img
+                            fake_img = s2_img # placeholder
 
                             Metrics.save_img(
 				hr_img, '{}/{}_{}_hr.png'.format(result_path, current_step, idx))
                             Metrics.save_img(
 				sr_img, '{}/{}_{}_sr.png'.format(result_path, current_step, idx))
-                            Metrics.save_img(s2_img, '{}/{}_{}_s2.png'.format(result_path, current_step, idx))
+
+                            if use_3d:
+                                # NOTE: unet_3d not properly saving s2_img, shape is (332, 266, 3) ?
+                                fake_img = torch.rand((64,64,3))
+                            else:
+                                fake_img = s2_img
+                                Metrics.save_img(s2_img, '{}/{}_{}_s2.png'.format(result_path, current_step, idx))
 
                         # NAIP generation based on S2 + downsampled NAIP conditioning.
                         elif datatype == 's2_and_downsampled_naip':
