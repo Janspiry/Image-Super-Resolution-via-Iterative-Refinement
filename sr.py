@@ -74,22 +74,20 @@ if __name__ == "__main__":
     if args.auto_resume:
         chkpt_path = opt['path']['checkpoint']
 
-        if len(os.listdir(chkpt_path)) == 0 or chpkt_path is None:
-            continue
+        if not (len(os.listdir(chkpt_path)) == 0 or chpkt_path is None):
+            best_weight, best_iters = None, 0
+            for chkpt in os.listdir(chkpt_path):
+                # Just gonna look for opt weights so we don't repeatedly look.
+                if chkpt.endswith('gen.pth'):
+                    continue
+                split = chkpt.split('_')
+                iterations = int(split[0][1:])
+                epochs = int(split[1][1:])
 
-        best_weight, best_iters = None, 0
-        for chkpt in os.listdir(chkpt_path):
-            # Just gonna look for opt weights so we don't repeatedly look.
-            if chkpt.endswith('gen.pth'):
-                continue
-            split = chkpt.split('_')
-            iterations = int(split[0][1:])
-            epochs = int(split[1][1:])
-
-            if iterations > best_iters:
-                best_weight = chkpt
-                best_iters = iterations
-        opt['path']['resume_state'] = os.path.join(opt['path']['checkpoint'], best_weight[:-8])
+                if iterations > best_iters:
+                    best_weight = chkpt
+                    best_iters = iterations
+            opt['path']['resume_state'] = os.path.join(opt['path']['checkpoint'], best_weight[:-8])
 
     # model
     diffusion = Model.create_model(opt)
