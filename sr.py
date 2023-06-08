@@ -85,6 +85,10 @@ if __name__ == "__main__":
             if iterations > best_iters:
                 best_weight = chkpt
                 best_iters = iterations
+        if not 'resume_state' in opt['path']:
+            opt['path']['resume_state'] = ''
+        print(opt['path']['resume_state'])
+        print(opt['path']['checkpoint'])
         opt['path']['resume_state'] = os.path.join(opt['path']['checkpoint'], best_weight[:-8])
 
     # model
