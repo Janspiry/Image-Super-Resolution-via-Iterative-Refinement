@@ -8,8 +8,7 @@
         "log": "/data/piperw/experiments/testing-preemptible/logs",
         "tb_logger": "/data/piperw/experiments/testing-preemptible/tb_logger",
         "results": "/data/piperw/experiments/testing-preemptible/results",
-        "checkpoint": "/data/piperw/experiments/testing-preemptible/checkpoint",
-        "resume_state": null 
+        "checkpoint": "/data/piperw/experiments/testing-preemptible/checkpoint"
     },
     "datasets": {
 	"output_size": 128,
