@@ -152,6 +152,36 @@ class LRHRDataset(Dataset):
             raise NotImplementedError(
                 'data_type [{:s}] is not recognized.'.format(datatype))
 
+    """
+    def get_tile_weight_sampler(self, tile_weights):
+        weights = []
+        for option in self.options:
+            if option.mode == 'space':
+                # Weights for tile (col, row) should specify how strongly we want to sample stuff in that tile.
+                # But if span>1 then sampling tile (col, row) includes tiles like (col+1, row+1).
+                max_weight = 0
+                for i in range(self.span):
+                    for j in range(self.span):
+                        option_name = '{}_{}'.format(option.tile[0] + i, option.tile[1] + j)
+                        max_weight = max(max_weight, tile_weights.get(option_name, 0))
+                weights.append(max_weight)
+
+            else:
+                if option.mode == 'exact':
+                    option_name = '{}_{}_{}'.format(option.tile[0], option.tile[1], option.image_uuids[0])
+
+                elif option.mode == 'custom':
+                    task_idx = option.tasks[0]
+                    task_name = self.task_specs[task_idx]['Name']
+                    option_name = '{}_{}'.format(option.tile_str, task_name)
+
+                if option_name not in tile_weights:
+                    print(option_name, option.tasks)
+                weights.append(tile_weights[option_name])
+
+        print('using tile_weight_sampler, min={} max={} mean={}'.format(min(weights), max(weights), np.mean(weights)))
+        return torch.utils.data.WeightedRandomSampler(weights, len(self.options))
+    """
 
     def __len__(self):
         return self.data_len

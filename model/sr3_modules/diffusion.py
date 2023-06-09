@@ -214,6 +214,7 @@ class GaussianDiffusion(nn.Module):
 
     @torch.no_grad()
     def p_sample_loop(self, x_in, continous=False):
+        batch = x_in.shape[0]
         device = self.betas.device
 
         sample_inter = (1 | (self.num_timesteps//10))
@@ -230,9 +231,9 @@ class GaussianDiffusion(nn.Module):
 
             # Specifying shape because our conditioning is often not the same shape as desired output.
             if self.use_3d:
-                shape = (1, 1, 3, self.output_size, self.output_size)
+                shape = (batch, 1, 3, self.output_size, self.output_size)
             else: 
-                shape = (1, 3, self.output_size, self.output_size)
+                shape = (batch, 3, self.output_size, self.output_size)
 
             img = torch.randn(shape, device=device)
             ret_img = img # img instead of x?
@@ -260,7 +261,7 @@ class GaussianDiffusion(nn.Module):
         times = list(reversed(times.int().tolist()))
         time_pairs = list(zip(times[:-1], times[1:])) # [(T-1, T-2), (T-2, T-3), ..., (1, 0), (0, -1)]
 
-        img = torch.randn((1, 3, self.output_size, self.output_size), device=device)
+        img = torch.randn((batch, 3, self.output_size, self.output_size), device=device)
         imgs = [img]
 
         x_start = None
