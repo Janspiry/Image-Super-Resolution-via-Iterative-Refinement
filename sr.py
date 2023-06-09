@@ -56,19 +56,20 @@ if __name__ == "__main__":
     output_size = opt['datasets']['output_size'] if 'output_size' in opt['datasets'] else 512
     use_3d = bool(opt['datasets']['use_3d'])
 
-    # sampler
-    if 'tile_weights' in opt['datasets']['train']:
-        with open(opt['datasets']['train']['tile_weights'], 'r') as f:
-            tile_weights = {tile_str: weight for tile_str, weight in json.load(f).items()}
-        train_sampler = train_data.get_tile_weight_sampler(tile_weights=tile_weights)
-    else:
-        train_sampler = None
-
     # dataset
     datatype = opt['datasets']['train']['datatype']
     for phase, dataset_opt in opt['datasets'].items():
         if phase == 'train' and args.phase != 'val':
             train_set = Data.create_dataset(dataset_opt, phase, output_size=output_size, use_3d=bool(opt['datasets']['use_3d']))
+
+	    # sampler
+            if 'tile_weights' in opt['datasets']['train']:
+                with open(opt['datasets']['train']['tile_weights'], 'r') as f:
+                    tile_weights = {tile_str: weight for tile_str, weight in json.load(f).items()}
+                train_sampler = train_set.get_tile_weight_sampler(tile_weights=tile_weights)
+            else:
+                train_sampler = None
+
             train_loader = Data.create_dataloader(
                 train_set, dataset_opt, phase, sampler=train_sampler)
         elif phase == 'val':

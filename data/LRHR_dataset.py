@@ -30,7 +30,8 @@ class LRHRDataset(Dataset):
         self.max_tiles = max_tiles
         self.use_3d = use_3d
 
-        print("SELF.DATATYPE:", self.datatype, " OUTPUT_SIZE:", self.output_size)
+        print("OUTPUT_SIZE:", self.output_size)
+        print("DATAROOT:", dataroot)
 
         # Paths to the imagery.
         self.s2_path = os.path.join(dataroot, 's2_condensed')
@@ -56,7 +57,6 @@ class LRHRDataset(Dataset):
             for fp in val_fps:
                 fp = fp[:-1]
                 self.val_fps.append(os.path.join(self.naip_path, fp))
-        print("length of held out val set:", len(self.val_fps))
 
         self.naip_chips = glob.glob(self.naip_path + '/**/*.png', recursive=True)
         print("self.naip chips:", len(self.naip_chips), " self.naip_path:", self.naip_path)
@@ -152,36 +152,25 @@ class LRHRDataset(Dataset):
             raise NotImplementedError(
                 'data_type [{:s}] is not recognized.'.format(datatype))
 
-    """
     def get_tile_weight_sampler(self, tile_weights):
         weights = []
-        for option in self.options:
-            if option.mode == 'space':
-                # Weights for tile (col, row) should specify how strongly we want to sample stuff in that tile.
-                # But if span>1 then sampling tile (col, row) includes tiles like (col+1, row+1).
-                max_weight = 0
-                for i in range(self.span):
-                    for j in range(self.span):
-                        option_name = '{}_{}'.format(option.tile[0] + i, option.tile[1] + j)
-                        max_weight = max(max_weight, tile_weights.get(option_name, 0))
-                weights.append(max_weight)
+        for dp in self.datapoints:
+            # Extract the NAIP chip from this datapoint's NAIP path.
+            # With the chip, we can index into the tile_weights dict (naip_chip : weight)
+            # and then weight this datapoint pair in self.datapoints based on that value.
+            naip_path = dp[0]
+            split = naip_path.split('/')[-1]
+            chip = split[:-4]
 
+            # If the chip isn't in the tile weights dict, then there weren't any OSM features
+            # in that chip, so we can set the weight to be relatively low (ex. 1).
+            if not chip in tile_weights:
+                weights.append(1)
             else:
-                if option.mode == 'exact':
-                    option_name = '{}_{}_{}'.format(option.tile[0], option.tile[1], option.image_uuids[0])
-
-                elif option.mode == 'custom':
-                    task_idx = option.tasks[0]
-                    task_name = self.task_specs[task_idx]['Name']
-                    option_name = '{}_{}'.format(option.tile_str, task_name)
-
-                if option_name not in tile_weights:
-                    print(option_name, option.tasks)
-                weights.append(tile_weights[option_name])
+                weights.append(tile_weights[chip])
 
         print('using tile_weight_sampler, min={} max={} mean={}'.format(min(weights), max(weights), np.mean(weights)))
-        return torch.utils.data.WeightedRandomSampler(weights, len(self.options))
-    """
+        return torch.utils.data.WeightedRandomSampler(weights, len(self.datapoints))
 
     def __len__(self):
         return self.data_len

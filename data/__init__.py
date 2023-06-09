@@ -15,6 +15,7 @@ def create_dataloader(dataset, dataset_opt, phase, sampler=None):
             sampler=sampler,
             pin_memory=True)
     elif phase == 'val':
+        print("val batch size:", dataset_opt['batch_size'])
         return torch.utils.data.DataLoader(
             dataset, batch_size=dataset_opt['batch_size'], shuffle=False, num_workers=dataset_opt['num_workers'], pin_memory=True)
     else:

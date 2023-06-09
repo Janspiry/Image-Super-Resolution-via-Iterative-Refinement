@@ -24,10 +24,10 @@
         },
         "val": {
             "name": "S2-NAIP",
-            "dataroot": "/data/piperw/held_out_set/",
+            "dataroot": "/data/piperw/urban_set/",
             "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
-	    "batch_size": 1,
-	    "num_workers": 1,
+	    "batch_size": 64,
+	    "num_workers": 8,
             "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint
         }
     },
