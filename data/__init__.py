@@ -15,9 +15,10 @@ def create_dataloader(dataset, dataset_opt, phase, sampler=None):
             sampler=sampler,
             pin_memory=True)
     elif phase == 'val':
-        print("val batch size:", dataset_opt['batch_size'])
+        batch_size = 1 if not 'batch_size' in dataset_opt else dataset_opt['batch_size']
+        num_workers = 1 if not 'num_workers' in dataset_opt else dataset_opt['num_workers']
         return torch.utils.data.DataLoader(
-            dataset, batch_size=dataset_opt['batch_size'], shuffle=False, num_workers=dataset_opt['num_workers'], pin_memory=True)
+            dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
     else:
         raise NotImplementedError(
             'Dataloader [{:s}] is not found.'.format(phase))
