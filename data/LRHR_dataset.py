@@ -12,8 +12,26 @@ import json
 import glob
 import numpy as np
 import torch
+from torch.utils.data import WeightedRandomSampler
 from torchvision.transforms import functional as trans_fn
 import glob
+
+
+class CustomWeightedRandomSampler(WeightedRandomSampler):
+    """
+    WeightedRandomSampler except allows for more than 2^24 samples to be sampled.
+    Source code: https://github.com/pytorch/pytorch/issues/2576#issuecomment-831780307
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def __iter__(self):
+        rand_tensor = np.random.choice(range(0, len(self.weights)),
+                                       size=self.num_samples,
+                                       p=self.weights.numpy() / torch.sum(self.weights).numpy(),
+                                       replace=self.replacement)
+        rand_tensor = torch.from_numpy(rand_tensor)
+        return iter(rand_tensor.tolist())
 
 
 class LRHRDataset(Dataset):
@@ -170,7 +188,8 @@ class LRHRDataset(Dataset):
                 weights.append(tile_weights[chip])
 
         print('using tile_weight_sampler, min={} max={} mean={}'.format(min(weights), max(weights), np.mean(weights)))
-        return torch.utils.data.WeightedRandomSampler(weights, len(self.datapoints))
+        #return torch.utils.data.WeightedRandomSampler(weights, len(self.datapoints))
+        return CustomWeightedRandomSampler(weights, len(self.datapoints))
 
     def __len__(self):
         return self.data_len
