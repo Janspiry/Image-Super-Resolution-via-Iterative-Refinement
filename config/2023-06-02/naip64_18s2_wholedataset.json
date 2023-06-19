@@ -1,14 +1,14 @@
 {
-    "name": "18S2-naip64-wholedataset",
+    "name": "18S2-naip64-wholedataset-tileweights",
     "phase": "train", // train or val
     "gpu_ids": [
         0,1,2,3
     ],
     "path": { //set the path
-        "log": "/data/piperw/experiments/18S2-naip64-wholedataset/logs",
-        "tb_logger": "/data/piperw/experiments/18S2-naip64-wholedataset/tb_logger",
-        "results": "/data/piperw/experiments/18S2-naip64-wholedataset/results",
-        "checkpoint": "/data/piperw/experiments/18S2-naip64-wholedataset/checkpoint",
+        "log": "/data/piperw/experiments/18S2-naip64-wholedataset-tileweights/logs",
+        "tb_logger": "/data/piperw/experiments/18S2-naip64-wholedataset-tileweights/tb_logger",
+        "results": "/data/piperw/experiments/18S2-naip64-wholedataset-tileweights/results",
+        "checkpoint": "/data/piperw/experiments/18S2-naip64-wholedataset-tileweights/checkpoint",
         "resume_state": null
     },
     "datasets": {
@@ -19,7 +19,8 @@
             "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
             "batch_size": 64,
             "num_workers": 16,
-            "use_shuffle": true,
+            "use_shuffle": false,
+	    "tile_weights": "/data/piperw/tile_weights/full_dataset_weights.json",
             "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint
         },
         "val": {

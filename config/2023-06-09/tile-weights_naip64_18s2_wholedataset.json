@@ -9,7 +9,7 @@
         "tb_logger": "/data/piperw/experiments/18S2-naip64-wholedataset-tileweights/tb_logger",
         "results": "/data/piperw/experiments/18S2-naip64-wholedataset-tileweights/results",
         "checkpoint": "/data/piperw/experiments/18S2-naip64-wholedataset-tileweights/checkpoint",
-        "resume_state": null
+        "resume_state": "/data/piperw/experiments/18S2-naip64-wholedataset-tileweights/checkpoint/I2920000_E9"
     },
     "datasets": {
 	"output_size": 64,
@@ -20,7 +20,6 @@
             "batch_size": 128,
             "num_workers": 32,
             "use_shuffle": false,
-	    "tile_weights": "/data/piperw/tile_weights/full_dataset_weights.json",
             "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint
         },
         "val": {
