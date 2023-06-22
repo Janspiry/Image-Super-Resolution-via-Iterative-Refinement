@@ -87,7 +87,7 @@ def define_G(opt):
     if model_opt['which_model_G'] == 'ddpm':
         from .ddpm_modules import diffusion, unet
     elif model_opt['which_model_G'] == 'sr3':
-        from .sr3_modules import diffusion, unet, unet_3d, aggregate_3d
+        from .sr3_modules import diffusion, unet, unet_3d, aggregate_3d, anchor_aggregate_3d
 
     if 'unet' in model_opt:
         if ('norm_groups' not in model_opt['unet']) or model_opt['unet']['norm_groups'] is None:
@@ -124,6 +124,22 @@ def define_G(opt):
             dropout=model_opt['aggregate_3d']['dropout'],
             image_size=model_opt['diffusion']['image_size']
         )
+    elif 'anchor_aggregate_3d' in model_opt:
+        if ('norm_groups' not in model_opt['anchor_aggregate_3d']) or model_opt['anchor_aggregate_3d']['norm_groups'] is None:
+            model_opt['anchor_aggregate_3d']['norm_groups']=32
+        model = anchor_aggregate_3d.UNet(
+            in_channel=model_opt['anchor_aggregate_3d']['in_channel'],
+            out_channel=model_opt['anchor_aggregate_3d']['out_channel'],
+            norm_groups=model_opt['anchor_aggregate_3d']['norm_groups'],
+            inner_channel=model_opt['anchor_aggregate_3d']['inner_channel'],
+            channel_mults=model_opt['anchor_aggregate_3d']['channel_multiplier'],
+            attn_res=model_opt['anchor_aggregate_3d']['attn_res'],
+            res_blocks=model_opt['anchor_aggregate_3d']['res_blocks'],
+            dropout=model_opt['anchor_aggregate_3d']['dropout'],
+            image_size=model_opt['diffusion']['image_size']
+        )
+    else:
+        print("Model name not recognized, see model/networks.py to add.")
 
     netG = diffusion.GaussianDiffusion(
         model,

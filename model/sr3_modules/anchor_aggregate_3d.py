@@ -1,5 +1,6 @@
 import math
 import torch
+import random
 from torch import nn
 import torch.nn.functional as F
 from inspect import isfunction
@@ -242,25 +243,30 @@ class UNet(nn.Module):
 
     def forward(self, x, time):
 
-        print("input:", x.shape)
-
         t = self.noise_level_mlp(time) if exists(
             self.noise_level_mlp) else None
 
-        # Send each of the S2 images through the 2D unet individually, then aggregate (max pool) features.
-        s2_feats = []
+        # List to hold the features of the various (noise, noise) and (anchor, image) tensors.
+        features = []
+
+        # Concatenate two instances of the noisy high res together so it's of shape [6, h, w].
         noisy_highres = x[:, 0:3, :, :]
+        noise = torch.cat((noisy_highres, noisy_highres), dim=1)
+        noise_feat = self.lrelu(self.indiv1(noise))
+        noise_feat = self.lrelu(self.indiv2(noise_feat))
+
+        # Pick one of the S2 images randomly to be our "anchor".
+        rand_idx = random.randint(0, 18)
+        anchor = x[:, rand_idx*3:rand_idx*3+3, :, :]
+
         for ts in range(3, x.shape[1], 3):
-            cur = torch.cat((noisy_highres, x[:, ts:ts+3, :, :]), dim=1)
+            cur = torch.cat((anchor, x[:, ts:ts+3, :, :]), dim=1)
             cur = self.lrelu(self.indiv1(cur))
             cur = self.lrelu(self.indiv2(cur))
-            s2_feats.append(cur)
-        print("indiv S2 image feature:", cur.shape)
+            features.append(cur)
 
-        agg = torch.stack(s2_feats, dim=1)
-        print("stacked S2 image features:", agg.shape)
+        agg = torch.stack(features, dim=1)
         x = self.max_pool(agg).squeeze(1)
-        print("max pool:", x.shape)
 
         feats = []
         for layer in self.downs:
@@ -282,6 +288,4 @@ class UNet(nn.Module):
             else:
                 x = layer(x)
 
-        print("after the UNet...")
-        print("final conv:", self.final_conv(x).shape)
         return self.final_conv(x)
