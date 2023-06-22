@@ -36,7 +36,7 @@
         "which_model_G": "sr3", // use the ddpm or sr3 network structure
         "finetune_norm": false,
         "anchor_aggregate_3d": {
-            "in_channel": 64,
+            "in_channel": 128,
             "out_channel": 3,
             "inner_channel": 64,
             "channel_multiplier": [

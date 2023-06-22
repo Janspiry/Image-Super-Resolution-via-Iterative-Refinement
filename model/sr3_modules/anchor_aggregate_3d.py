@@ -235,7 +235,11 @@ class UNet(nn.Module):
 
         self.final_conv = Block(pre_channel, default(out_channel, in_channel), groups=norm_groups)
 
-        # Few layers to send in individual S2 images + the noise, then aggregate these along the time dimension.
+        # Few noise-specific layers.
+        self.noise1 = nn.Conv2d(3, 64, 3, 1, 1)
+        self.noise2 = nn.Conv2d(64, 64, 3, 1, 1)
+
+        # Few layers to send in individual S2 images, then aggregate these along the time dimension.
         self.indiv1 = nn.Conv2d(6, 64, 3, 1, 1)
         self.indiv2 = nn.Conv2d(64, 64, 3, 1, 1)
         self.lrelu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
@@ -249,16 +253,16 @@ class UNet(nn.Module):
         # List to hold the features of the various (noise, noise) and (anchor, image) tensors.
         features = []
 
-        # Concatenate two instances of the noisy high res together so it's of shape [6, h, w].
+        # Send the noisy high res through a couple noise-specific layers. Will concat to s2 features later.
         noisy_highres = x[:, 0:3, :, :]
-        noise = torch.cat((noisy_highres, noisy_highres), dim=1)
-        noise_feat = self.lrelu(self.indiv1(noise))
-        noise_feat = self.lrelu(self.indiv2(noise_feat))
+        noise_feat = self.lrelu(self.noise1(noisy_highres))
+        noise_feat = self.lrelu(self.noise2(noise_feat))
 
         # Pick one of the S2 images randomly to be our "anchor".
         rand_idx = random.randint(0, 18)
         anchor = x[:, rand_idx*3:rand_idx*3+3, :, :]
 
+        # Send (anchor, image) pairs through the S2 feature layers individually.
         for ts in range(3, x.shape[1], 3):
             cur = torch.cat((anchor, x[:, ts:ts+3, :, :]), dim=1)
             cur = self.lrelu(self.indiv1(cur))
@@ -267,6 +271,8 @@ class UNet(nn.Module):
 
         agg = torch.stack(features, dim=1)
         x = self.max_pool(agg).squeeze(1)
+
+        x = torch.cat((x, noise_feat), dim=1)
 
         feats = []
         for layer in self.downs:
