@@ -54,7 +54,7 @@ if __name__ == "__main__":
         wandb_logger = None
     
     output_size = opt['datasets']['output_size'] if 'output_size' in opt['datasets'] else 512
-    use_3d = bool(opt['datasets']['use_3d'])
+    use_3d = bool(opt['datasets']['use_3d']) if 'use_3d' in opt['datasets'] else False
 
     # dataset
     datatype = opt['datasets']['train']['datatype']
@@ -144,8 +144,6 @@ if __name__ == "__main__":
 
                     result_path = '{}/{}'.format(opt['path']['results'], current_epoch)
                     os.makedirs(result_path, exist_ok=True)
-                    result_path = 'change_detection_results/'
-                    print("result path:", result_path)
 
                     diffusion.set_new_noise_schedule(
                         opt['model']['beta_schedule']['val'], schedule_phase='val')
