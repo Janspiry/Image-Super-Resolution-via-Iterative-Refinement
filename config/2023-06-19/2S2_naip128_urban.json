@@ -1,15 +1,15 @@
 {
-    "name": "aggregate-18S2-naip128-urban",
+    "name": "2S2_naip128_urban",
     "phase": "train", // train or val
     "gpu_ids": [
-        0,1,2,3
+        0,1
     ],
     "path": { //set the path
-        "log": "/data/piperw/experiments/aggregate-18S2-naip128-urban/logs",
-        "tb_logger": "/data/piperw/experiments/aggregate-18S2-naip128-urban/tb_logger",
-        "results": "/data/piperw/experiments/aggregate-18S2-naip128-urban/results",
-        "checkpoint": "/data/piperw/experiments/aggregate-18S2-naip128-urban/checkpoint",
-        "resume_state": "/data/piperw/experiments/aggregate-18S2-naip128-urban/checkpoint/I1360000_E73"
+        "log": "/data/piperw/experiments/2S2_naip128_urban/logs",
+        "tb_logger": "/data/piperw/experiments/2S2_naip128_urban/tb_logger",
+        "results": "/data/piperw/experiments/2S2_naip128_urban/results",
+        "checkpoint": "/data/piperw/experiments/2S2_naip128_urban/checkpoint",
+        "resume_state": null
     },
     "datasets": {
 	"output_size": 128,
@@ -19,21 +19,22 @@
             "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
             "batch_size": 128,
             "num_workers": 32,
-            "use_shuffle": true,
-            "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint
+            "use_shuffle": false,
+	    "tile_weights": "/data/piperw/tile_weights/full_dataset_weights.json",
+            "n_s2_images": 2  // if using S2 for condition, how many images per naip datapoint
         },
         "val": {
             "name": "S2-NAIP",
             "dataroot": "/data/piperw/held_out_set/",
             "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
-            "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint
+            "n_s2_images": 2  // if using S2 for condition, how many images per naip datapoint
         }
     },
     "model": {
         "which_model_G": "sr3", // use the ddpm or sr3 network structure
         "finetune_norm": false,
-        "aggregate_3d": {
-            "in_channel": 64,
+        "unet": {
+            "in_channel": 9,
             "out_channel": 3,
             "inner_channel": 64,
             "channel_multiplier": [

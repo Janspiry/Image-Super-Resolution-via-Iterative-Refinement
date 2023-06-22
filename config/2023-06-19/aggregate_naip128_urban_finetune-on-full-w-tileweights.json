@@ -1,25 +1,26 @@
 {
-    "name": "aggregate-18S2-naip128-urban",
+    "name": "aggregate-18S2-naip128-urban-finetuned-on-full-w-tileweights",
     "phase": "train", // train or val
     "gpu_ids": [
         0,1,2,3
     ],
     "path": { //set the path
-        "log": "/data/piperw/experiments/aggregate-18S2-naip128-urban/logs",
-        "tb_logger": "/data/piperw/experiments/aggregate-18S2-naip128-urban/tb_logger",
-        "results": "/data/piperw/experiments/aggregate-18S2-naip128-urban/results",
-        "checkpoint": "/data/piperw/experiments/aggregate-18S2-naip128-urban/checkpoint",
+        "log": "/data/piperw/experiments/aggregate-18S2-naip128-urban-finetuned-on-full-w-tileweights/logs",
+        "tb_logger": "/data/piperw/experiments/aggregate-18S2-naip128-urban-finetuned-on-full-w-tileweights/tb_logger",
+        "results": "/data/piperw/experiments/aggregate-18S2-naip128-urban-finetuned-on-full-w-tileweights/results",
+        "checkpoint": "/data/piperw/experiments/aggregate-18S2-naip128-urban-finetuned-on-full-w-tileweights/checkpoint",
         "resume_state": "/data/piperw/experiments/aggregate-18S2-naip128-urban/checkpoint/I1360000_E73"
     },
     "datasets": {
 	"output_size": 128,
         "train": {
             "name": "S2-NAIP",
-	    "dataroot": "/data/piperw/urban_set/",
+	    "dataroot": "/data/piperw/full_dataset/",
             "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
             "batch_size": 128,
             "num_workers": 32,
-            "use_shuffle": true,
+            "use_shuffle": false,
+	    "tile_weights": "/data/piperw/tile_weights/full_dataset_weights.json",
             "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint
         },
         "val": {
