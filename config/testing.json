@@ -8,7 +8,7 @@
         "log": "/data/piperw/experiments/testing/logs",
         "tb_logger": "/data/piperw/experiments/testing/tb_logger",
         "results": "/data/piperw/experiments/testing/results",
-        "checkpoint": "/data/piperw/experiments/18S2-naip128-urban/checkpoint",
+        "checkpoint": "/data/piperw/experiments/testing/checkpoint",
         "resume_state": null //"/data/piperw/experiments/18S2-naip128-urban/checkpoint/I780000_E354"
     },
     "datasets": {
@@ -24,18 +24,19 @@
         },
         "val": {
             "name": "S2-NAIP",
-            "dataroot": "/data/piperw/urban_set/",
+            "dataroot": "/data/piperw/held_out_set/",
             "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
-	    "batch_size": 64,
-	    "num_workers": 8,
+	    "batch_size": 1,
+	    "num_workers": 1,
+	    "use_shuffle": false,
             "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint
         }
     },
     "model": {
         "which_model_G": "sr3", // use the ddpm or sr3 network structure
         "finetune_norm": false,
-        "anchor_aggregate_3d": {
-            "in_channel": 64,
+        "unet": {
+            "in_channel": 57,
             "out_channel": 3,
             "inner_channel": 64,
             "channel_multiplier": [
@@ -74,7 +75,7 @@
     "train": {
         "n_iter": 10000000,
         "val_freq": 20,
-        "save_checkpoint_freq": 2e4,
+        "save_checkpoint_freq": 20,
         "print_freq": 20,
         "optimizer": {
             "type": "adam",
