@@ -70,7 +70,6 @@ if __name__ == "__main__":
     idx = 0
 
     result_path = '{}'.format(opt['path']['results'])
-    result_path = 'aggregate_results'
     os.makedirs(result_path, exist_ok=True)
     for _,  val_data in enumerate(val_loader):
         idx += 1
