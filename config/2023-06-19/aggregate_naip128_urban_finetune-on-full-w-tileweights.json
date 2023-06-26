@@ -2,14 +2,14 @@
     "name": "aggregate-18S2-naip128-urban-finetuned-on-full-w-tileweights",
     "phase": "train", // train or val
     "gpu_ids": [
-        0,1,2,3
+        0
     ],
     "path": { //set the path
         "log": "/data/piperw/experiments/aggregate-18S2-naip128-urban-finetuned-on-full-w-tileweights/logs",
         "tb_logger": "/data/piperw/experiments/aggregate-18S2-naip128-urban-finetuned-on-full-w-tileweights/tb_logger",
         "results": "/data/piperw/experiments/aggregate-18S2-naip128-urban-finetuned-on-full-w-tileweights/results",
         "checkpoint": "/data/piperw/experiments/aggregate-18S2-naip128-urban-finetuned-on-full-w-tileweights/checkpoint",
-        "resume_state": "/data/piperw/experiments/aggregate-18S2-naip128-urban/checkpoint/I1360000_E73"
+        "resume_state": "/data/piperw/experiments/aggregate-18S2-naip128-urban-finetuned-on-full-w-tileweights/checkpoint/I2000000_E75"
     },
     "datasets": {
 	"output_size": 128,

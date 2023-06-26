@@ -36,18 +36,9 @@ if __name__ == "__main__":
     logger.info(Logger.dict2str(opt))
     tb_logger = SummaryWriter(log_dir=opt['path']['tb_logger'])
 
-    """
-    # FOR BEAKER: check if there is an existing "last" checkpoint within this experiment results dir.
-    last_gen_check = os.path.join(opt['path']['checkpoint'], 'last_gen.pth')
-    last_opt_check = os.path.join(opt['path']['checkpoint'], 'last_opt.pth')
-    if os.path.exists(last_gen_check) and os.path.exists(last_opt_check):
-        print("Resuming from last checkpoints...", last_gen_check, " and ", last_opt_check)
-        opt['path']['resume_state'] = os.path.join(opt['path']['checkpoint'], 'last')
-    """
-
     # If not resuming from last checkpoint and just trying to load in weights, it should default to here.
-    current_epoch = 354
-    current_step = 780000
+    current_epoch = 2000
+    current_step = 1000
     if (opt['path']['resume_gen_state'] and opt['path']['resume_opt_state']) or opt['path']['resume_state']:
         logger.info('Resuming training from epoch: {}, iter: {}.'.format(
             current_epoch, current_step))
@@ -79,6 +70,7 @@ if __name__ == "__main__":
     idx = 0
 
     result_path = '{}'.format(opt['path']['results'])
+    result_path = 'aggregate_results'
     os.makedirs(result_path, exist_ok=True)
     for _,  val_data in enumerate(val_loader):
         idx += 1
@@ -99,9 +91,9 @@ if __name__ == "__main__":
                     Metrics.tensor2img(sr_img[iter]), '{}/{}_{}_sr_{}.png'.format(result_path, current_step, idx, iter))
         else:
             # grid img
-            sr_img = Metrics.tensor2img(visuals['SR'])  # uint8
-            Metrics.save_img(
-                sr_img, '{}/{}_{}_sr_process.png'.format(result_path, current_step, idx))
+            #sr_img = Metrics.tensor2img(visuals['SR'])  # uint8
+            #Metrics.save_img(
+            #    sr_img, '{}/{}_{}_sr_process.png'.format(result_path, current_step, idx))
             # changed the indexing here from [-1] to [:, -1, :, :, :]
             Metrics.save_img(
                     Metrics.tensor2img(visuals['SR'][:, -1, :, :, :]), '{}/{}_{}_sr.png'.format(result_path, current_step, idx))

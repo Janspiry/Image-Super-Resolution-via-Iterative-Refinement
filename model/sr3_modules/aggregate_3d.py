@@ -242,8 +242,6 @@ class UNet(nn.Module):
 
     def forward(self, x, time):
 
-        print("input:", x.shape)
-
         t = self.noise_level_mlp(time) if exists(
             self.noise_level_mlp) else None
 
@@ -255,12 +253,9 @@ class UNet(nn.Module):
             cur = self.lrelu(self.indiv1(cur))
             cur = self.lrelu(self.indiv2(cur))
             s2_feats.append(cur)
-        print("indiv S2 image feature:", cur.shape)
 
         agg = torch.stack(s2_feats, dim=1)
-        print("stacked S2 image features:", agg.shape)
         x = self.max_pool(agg).squeeze(1)
-        print("max pool:", x.shape)
 
         feats = []
         for layer in self.downs:
@@ -282,6 +277,4 @@ class UNet(nn.Module):
             else:
                 x = layer(x)
 
-        print("after the UNet...")
-        print("final conv:", self.final_conv(x).shape)
         return self.final_conv(x)
