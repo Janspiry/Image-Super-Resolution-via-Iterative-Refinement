@@ -96,6 +96,9 @@ class GaussianDiffusion(nn.Module):
         schedule_fn_kwargs = dict()
         auto_normalize = True
 
+        self.is_ddim_sampling = False
+        print("Utilizing ddim sampling?:", self.is_ddim_sampling)
+
         if schedule_opt is not None:
             pass
             # self.set_new_noise_schedule(schedule_opt)

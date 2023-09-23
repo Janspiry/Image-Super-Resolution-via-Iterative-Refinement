@@ -10,7 +10,9 @@ from core.wandb_logger import WandbLogger
 from tensorboardX import SummaryWriter
 import os
 import numpy as np
+import skimage.io
 
+from metrics import *
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -140,6 +142,7 @@ if __name__ == "__main__":
                 # validation
                 if current_step % opt['train']['val_freq'] == 0:
                     avg_psnr = 0.0
+                    avg_ssim = 0.0
                     idx = 0
 
                     result_path = '{}/{}'.format(opt['path']['results'], current_epoch)
@@ -222,14 +225,31 @@ if __name__ == "__main__":
                             Metrics.save_img(s2_img, '{}/{}_{}_s2.png'.format(result_path, current_step, idx))
                             Metrics.save_img(downsampled_naip_img, '{}/{}_{}_downsampled_naip.png'.format(result_path, current_step, idx))
 
+                        elif datatype == 'worldstrat':
+                            sr_img = Metrics.tensor2img(visuals['SR'])
+                            hr_img = Metrics.tensor2img(visuals['HR'])
+                            s2_img = Metrics.tensor2img(visuals['S2'])
+                            fake_img = s2_img
+
+                            Metrics.save_img(
+                                hr_img, '{}/{}_{}_hr.png'.format(result_path, current_step, idx))
+                            Metrics.save_img(
+                                sr_img, '{}/{}_{}_sr.png'.format(result_path, current_step, idx))
+                            Metrics.save_img(s2_img, '{}/{}_{}_s2.png'.format(result_path, current_step, idx))
+
                         # generation
                         tb_logger.add_image(
                             'Iter_{}'.format(current_step),
                             np.transpose(np.concatenate(
                                 (fake_img, sr_img, hr_img), axis=1), [2, 0, 1]),
                             idx)
-                        avg_psnr += Metrics.calculate_psnr(
-                            sr_img, hr_img)
+                        #avg_psnr += Metrics.calculate_psnr(sr_img, hr_img)
+
+                        # metric code from BasicSR
+                        eval_psnr = calculate_psnr(hr_img, sr_img, 4)
+                        eval_ssim = calculate_ssim(hr_img, sr_img, 4)
+                        avg_psnr += eval_psnr
+                        avg_ssim += eval_ssim
 
                         if wandb_logger:
                             wandb_logger.log_image(
@@ -238,6 +258,7 @@ if __name__ == "__main__":
                             )
 
                     avg_psnr = avg_psnr / idx
+                    avg_ssim = avg_ssim / idx
 
                     diffusion.set_new_noise_schedule(
                         opt['model']['beta_schedule']['train'], schedule_phase='train')
@@ -250,11 +271,13 @@ if __name__ == "__main__":
 
                     # tensorboard logger
                     tb_logger.add_scalar('psnr', avg_psnr, current_step)
+                    tb_logger.add_scalar('ssim', avg_ssim, current_step)
 
                     if wandb_logger:
                         wandb_logger.log_metrics({
                             'validation/val_psnr': avg_psnr,
-                            'validation/val_step': val_step
+                            'validation/val_step': val_step,
+                            'validation/val_ssim': avg_ssim
                         })
                         val_step += 1
 
@@ -364,8 +387,17 @@ if __name__ == "__main__":
                 Metrics.save_img(downsampled_naip_img, '{}/{}_{}_downsampled_naip.png'.format(result_path, current_step, idx))
 
             # generation
-            eval_psnr = Metrics.calculate_psnr(Metrics.tensor2img(visuals['SR'][-1]), hr_img)
-            eval_ssim = Metrics.calculate_ssim(Metrics.tensor2img(visuals['SR'][-1]), hr_img)
+            #eval_psnr = Metrics.calculate_psnr(Metrics.tensor2img(visuals['SR'][-1]), hr_img)
+            #eval_ssim = Metrics.calculate_ssim(Metrics.tensor2img(visuals['SR'][-1]), hr_img)
+
+            # metric code from BasicSR
+            print("metrics on:", hr_img.shape, " versus", sr_img.shape)
+            skimage.io.imsave('hr_img.png', hr_img)
+            skimage.io.imsave('sr_img.png', sr_img)
+            eval_psnr = calculate_psnr(hr_img, sr_img, 4)
+            eval_ssim = calculate_ssim(hr_img, sr_img, 4)
+            print("psnr:", eval_psnr, " ssim:", eval_ssim)
+            exit()
 
             avg_psnr += eval_psnr
             avg_ssim += eval_ssim
