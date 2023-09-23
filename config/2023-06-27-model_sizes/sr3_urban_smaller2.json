@@ -1,15 +1,15 @@
 {
-    "name": "2S2_naip128_urban",
+    "name": "sr3_urban_smaller2",
     "phase": "train", // train or val
     "gpu_ids": [
-        0,1
+        0
     ],
     "path": { //set the path
-        "log": "/data/piperw/experiments/2S2_naip128_urban/logs",
-        "tb_logger": "/data/piperw/experiments/2S2_naip128_urban/tb_logger",
-        "results": "/data/piperw/experiments/2S2_naip128_urban/results",
-        "checkpoint": "/data/piperw/experiments/2S2_naip128_urban/checkpoint",
-	"resume_state": null
+        "log": "/data/piperw/experiments/sr3_urban_smaller2/logs",
+        "tb_logger": "/data/piperw/experiments/sr3_urban_smaller2/tb_logger",
+        "results": "/data/piperw/experiments/sr3_urban_smaller2/results",
+        "checkpoint": "/data/piperw/experiments/sr3_urban_smaller2/checkpoint",
+        "resume_state": null
     },
     "datasets": {
 	"output_size": 128,
@@ -17,33 +17,33 @@
             "name": "S2-NAIP",
 	    "dataroot": "/data/piperw/urban_set/",
             "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
-            "batch_size": 128,
-            "num_workers": 32,
+            "batch_size": 64,
+            "num_workers": 16,
             "use_shuffle": false,
-	    "tile_weights": "/data/piperw/tile_weights/full_dataset_weights.json",
-            "n_s2_images": 2  // if using S2 for condition, how many images per naip datapoint
+	    "tile_weights": "/data/piperw/tile_weights/urban_set_weights.json",
+            "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint
         },
         "val": {
             "name": "S2-NAIP",
             "dataroot": "/data/piperw/held_out_set/",
-            "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
 	    "use_shuffle": false,
-            "n_s2_images": 2  // if using S2 for condition, how many images per naip datapoint
+            "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
+            "n_s2_images": 18  // if using S2 for condition, how many images per naip datapoint
         }
     },
     "model": {
         "which_model_G": "sr3", // use the ddpm or sr3 network structure
         "finetune_norm": false,
         "unet": {
-            "in_channel": 9,
+            "in_channel": 57,
             "out_channel": 3,
             "inner_channel": 64,
             "channel_multiplier": [
                 1,
                 2,
+                2,
                 4,
-                8,
-                8
+                4
             ],
             "attn_res": [
                 16
