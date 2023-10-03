@@ -26,6 +26,7 @@ if __name__ == "__main__":
     parser.add_argument('-log_wandb_ckpt', action='store_true')
     parser.add_argument('-log_eval', action='store_true')
     parser.add_argument('-auto_resume', action='store_true')
+    parser.add_argument('-save_images', action='store_true', default=False)
     
     # parse configs
     args = parser.parse_args()
@@ -57,6 +58,7 @@ if __name__ == "__main__":
     
     output_size = opt['datasets']['output_size'] if 'output_size' in opt['datasets'] else 512
     use_3d = bool(opt['datasets']['use_3d']) if 'use_3d' in opt['datasets'] else False
+    save_img = args.save_images
 
     # dataset
     datatype = opt['datasets']['train']['datatype']
@@ -198,17 +200,18 @@ if __name__ == "__main__":
 
                             fake_img = s2_img # placeholder
 
-                            Metrics.save_img(
-				hr_img, '{}/{}_{}_hr.png'.format(result_path, current_step, idx))
-                            Metrics.save_img(
-				sr_img, '{}/{}_{}_sr.png'.format(result_path, current_step, idx))
+                            if save_img:
+                                Metrics.save_img(
+                                    hr_img, '{}/{}_{}_hr.png'.format(result_path, current_step, idx))
+                                Metrics.save_img(
+                                    sr_img, '{}/{}_{}_sr.png'.format(result_path, current_step, idx))
 
-                            if use_3d:
-                                # NOTE: unet_3d not properly saving s2_img, shape is (332, 266, 3) ?
-                                fake_img = torch.rand((64,64,3))
-                            else:
-                                fake_img = s2_img
-                                Metrics.save_img(s2_img, '{}/{}_{}_s2.png'.format(result_path, current_step, idx))
+                                if use_3d:
+                                    # NOTE: unet_3d not properly saving s2_img, shape is (332, 266, 3) ?
+                                    fake_img = torch.rand((64,64,3))
+                                else:
+                                    fake_img = s2_img
+                                    Metrics.save_img(s2_img, '{}/{}_{}_s2.png'.format(result_path, current_step, idx))
 
                         # NAIP generation based on S2 + downsampled NAIP conditioning.
                         elif datatype == 's2_and_downsampled_naip':
@@ -231,11 +234,12 @@ if __name__ == "__main__":
                             s2_img = Metrics.tensor2img(visuals['S2'])
                             fake_img = s2_img
 
-                            Metrics.save_img(
-                                hr_img, '{}/{}_{}_hr.png'.format(result_path, current_step, idx))
-                            Metrics.save_img(
-                                sr_img, '{}/{}_{}_sr.png'.format(result_path, current_step, idx))
-                            Metrics.save_img(s2_img, '{}/{}_{}_s2.png'.format(result_path, current_step, idx))
+                            if save_img:
+                                Metrics.save_img(
+                                    hr_img, '{}/{}_{}_hr.png'.format(result_path, current_step, idx))
+                                Metrics.save_img(
+                                    sr_img, '{}/{}_{}_sr.png'.format(result_path, current_step, idx))
+                                Metrics.save_img(s2_img, '{}/{}_{}_s2.png'.format(result_path, current_step, idx))
 
                         # generation
                         tb_logger.add_image(

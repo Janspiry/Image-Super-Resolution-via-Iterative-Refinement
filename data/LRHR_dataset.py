@@ -235,7 +235,7 @@ class LRHRDataset(Dataset):
 
                 # Load the 512x512 NAIP chip.
                 naip_chip = skimage.io.imread(naip_path)
-                
+
                 # Check for black pixels (almost certainly invalid) and skip if found.
                 if [0, 0, 0] in naip_chip:
                     counter += 1

@@ -9,7 +9,7 @@
         "tb_logger": "/data/piperw/experiments/18s2_fulldataset_tileweights_4x/tb_logger",
         "results": "/data/piperw/experiments/18s2_fulldataset_tileweights_4x/results",
         "checkpoint": "/data/piperw/experiments/18s2_fulldataset_tileweights_4x/checkpoint",
-	"resume_state": null
+	"resume_state": "/data/piperw/experiments/18s2_fulldataset_tileweights_4x/checkpoint/I540000_E4"
     },
     "datasets": {
 	"output_size": 128,

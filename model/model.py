@@ -125,9 +125,7 @@ class DDPM(BaseModel):
             out_dict['HR'] = self.data['HR'].detach().float().cpu()
         elif datatype == 'worldstrat':
             s2 = self.data['SR']
-            print("s2:", s2.shape)
             out_dict['S2'] = s2.squeeze(0).detach().float().cpu()[0:3, :, :]
-            print("after:", out_dict['S2'].shape)
             out_dict['SR'] = self.SR.detach().float().cpu()  # self.SR is the generated Superresolution
             out_dict['HR'] = self.data['HR'].detach().float().cpu()  # self.data['HR'] is the original ground truth, high-res image
         return out_dict
