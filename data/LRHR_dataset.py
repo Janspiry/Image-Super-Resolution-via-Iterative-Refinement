@@ -224,7 +224,6 @@ class LRHRDataset(Dataset):
         # for "unconditional" generation during training. 
         cfg = random.randint(0, 19)
         uncond = True if cfg == 0 else False
-        print("cfg:", cfg, " uncond:", uncond)
 
         # Conditioning on S2, or S2 and downsampled NAIP.
         if self.datatype == 's2' or self.datatype == 's2_and_downsampled_naip' or self.datatype == 'just-s2':
@@ -340,7 +339,7 @@ class LRHRDataset(Dataset):
 
             # Classifier-free guidance step, replace S2 images with all black images.
             if uncond:
-                img_LR = torch.zeros_like(img_LR)
+                img_SR = torch.zeros_like(img_SR)
 
             return {'HR': img_HR, 'SR': img_SR, 'Index': index}
 
