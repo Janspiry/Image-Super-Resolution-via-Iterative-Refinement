@@ -220,6 +220,12 @@ class LRHRDataset(Dataset):
         img_HR = None
         img_LR = None
 
+        # Classifier-free guidance, X% of the time we want to replace S2 images with black images 
+        # for "unconditional" generation during training. 
+        cfg = random.randint(0, 19)
+        uncond = True if cfg == 0 else False
+        print("cfg:", cfg, " uncond:", uncond)
+
         # Conditioning on S2, or S2 and downsampled NAIP.
         if self.datatype == 's2' or self.datatype == 's2_and_downsampled_naip' or self.datatype == 'just-s2':
 
@@ -332,6 +338,10 @@ class LRHRDataset(Dataset):
                     else:
                         img_SR = torch.cat(s2_chunks)
 
+            # Classifier-free guidance step, replace S2 images with all black images.
+            if uncond:
+                img_LR = torch.zeros_like(img_LR)
+
             return {'HR': img_HR, 'SR': img_SR, 'Index': index}
 
         elif self.datatype == 'naip':
@@ -380,6 +390,10 @@ class LRHRDataset(Dataset):
             img_LR = torch.stack(lr_ims, dim=0)
             if not self.use_3d:
                 img_LR = torch.reshape(img_LR, (-1, 640,640))
+
+            # Classifier-free guidance step, replace S2 images with all black images.
+            if uncond:
+                img_LR = torch.zeros_like(img_LR)
 
             return {'HR': img_HR, 'SR': img_LR, 'Index': index}
 
