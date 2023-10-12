@@ -88,7 +88,6 @@ class GaussianDiffusion(nn.Module):
         self.loss_type = loss_type
         self.conditional = conditional
 
-        self.is_ddim_sampling = True
         self.num_timesteps = 2000
         self.sampling_timesteps = 200
         self.objective = 'pred_noise'
@@ -96,6 +95,7 @@ class GaussianDiffusion(nn.Module):
         schedule_fn_kwargs = dict()
         auto_normalize = True
 
+        self.unconditional_guidance_scale = 3.0
         self.is_ddim_sampling = True
         print("Utilizing ddim sampling?:", self.is_ddim_sampling)
 
@@ -207,6 +207,14 @@ class GaussianDiffusion(nn.Module):
         if inference:
             model_mean, model_log_variance, x_recon, pred_noise = self.p_mean_variance(
                 x=x, t=t, clip_denoised=clip_denoised, condition_x=condition_x, inference=inference)
+
+            black_img = torch.zeros_like(condition_x).to(device)
+            _, _, _, uncond_pred_noise = self.p_mean_variance(
+                x=x, t=t, clip_denoised=clip_denoised, condition_x=black_img, inference=inference)
+
+            # e_t = pred_noise & uncond_e_t = uncond_pred_noise & w = unconditional_guidance_scale
+            pred_noise = uncond_pred_noise + self.unconditional_guidance_scale * (pred_noise - uncond_pred_noise)
+
             noise = torch.randn_like(x) if t > 0 else torch.zeros_like(x)
             return model_mean + noise * (0.5 * model_log_variance).exp(), x_recon, pred_noise
         else:

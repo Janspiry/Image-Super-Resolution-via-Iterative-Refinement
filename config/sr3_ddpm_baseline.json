@@ -9,7 +9,7 @@
         "tb_logger": "experiments/sr3_ddpm_baseline/tb_logger",
         "results": "experiments/sr3_ddpm_baseline/results",
         "checkpoint": "experiments/sr3_ddpm_baseline/checkpoint",
-        "resume_state": null
+        "resume_state": "experiments/sr3_ddpm_baseline/checkpoint/last"
     },
     "datasets": {
 	"output_size": 128,
