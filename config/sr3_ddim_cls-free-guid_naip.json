@@ -2,7 +2,7 @@
     "name": "sr3_ddim_cls-free-guid_naip",
     "phase": "train", // train or val
     "gpu_ids": [
-        0,1,2,3,4,5,6,7
+        0
     ],
     "path": { //set the path
         "log": "experiments/sr3_ddim_cls-free-guid_naip/logs",
@@ -17,7 +17,7 @@
             "name": "S2-NAIP",
 	    "dataroot": "/data/piperw/data/urban_set/",
             "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
-            "batch_size": 512,
+            "batch_size": 32,
             "num_workers": 64,
             "use_shuffle": false,
 	    "tile_weights": "/data/piperw/data/tile_weights/urban_set_weights.json",

@@ -208,7 +208,7 @@ class GaussianDiffusion(nn.Module):
             model_mean, model_log_variance, x_recon, pred_noise = self.p_mean_variance(
                 x=x, t=t, clip_denoised=clip_denoised, condition_x=condition_x, inference=inference)
 
-            black_img = torch.zeros_like(condition_x).to(device)
+            black_img = torch.zeros_like(condition_x).to(x.device)
             _, _, _, uncond_pred_noise = self.p_mean_variance(
                 x=x, t=t, clip_denoised=clip_denoised, condition_x=black_img, inference=inference)
 

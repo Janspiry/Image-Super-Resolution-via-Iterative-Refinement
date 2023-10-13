@@ -2,7 +2,7 @@
     "name": "sr3_ddpm_worldstrat_continued",
     "phase": "train", // train or val
     "gpu_ids": [
-        0,1,2,3
+        0,1
     ],
     "path": { //set the path
         "log": "experiments/sr3_ddpm_worldstrat/logs",
@@ -17,8 +17,8 @@
             "name": "WorldStrat",
 	    "dataroot": "/data/piperw/worldstrat",
             "datatype": "worldstrat", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
-            "batch_size": 8,
-            "num_workers": 8,
+            "batch_size": 16,
+            "num_workers": 16,
             "use_shuffle": true,
             "n_s2_images": 8  // if using S2 for condition, how many images per naip datapoint
         },
@@ -72,7 +72,7 @@
     },
     "train": {
         "n_iter": 10000000,
-        "val_freq": 2e5,
+        "val_freq": 2e6,
         "save_checkpoint_freq": 2e4,
         "print_freq": 2000,
         "optimizer": {
