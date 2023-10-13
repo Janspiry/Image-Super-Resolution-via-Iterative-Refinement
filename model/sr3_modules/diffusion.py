@@ -181,6 +181,12 @@ class GaussianDiffusion(nn.Module):
 
         if inference:
             pred_noise = self.denoise_fn(torch.cat([condition_x, x], dim=1), noise_level)
+            uncond_condition_x = torch.zeros_like(condition_x).to(x.device) 
+            uncond_pred_noise = self.denoise_fn(torch.cat([uncond_condition_x, x], dim=1), noise_level)
+
+            # e_t = pred_noise & uncond_e_t = uncond_pred_noise & w = unconditional_guidance_scale
+            pred_noise = uncond_pred_noise + self.unconditional_guidance_scale * (pred_noise - uncond_pred_noise)
+
             x_recon = self.predict_start_from_noise(x, t=t, noise=pred_noise)
 
         else:
@@ -207,14 +213,6 @@ class GaussianDiffusion(nn.Module):
         if inference:
             model_mean, model_log_variance, x_recon, pred_noise = self.p_mean_variance(
                 x=x, t=t, clip_denoised=clip_denoised, condition_x=condition_x, inference=inference)
-
-            black_img = torch.zeros_like(condition_x).to(x.device)
-            _, _, _, uncond_pred_noise = self.p_mean_variance(
-                x=x, t=t, clip_denoised=clip_denoised, condition_x=black_img, inference=inference)
-
-            # e_t = pred_noise & uncond_e_t = uncond_pred_noise & w = unconditional_guidance_scale
-            pred_noise = uncond_pred_noise + self.unconditional_guidance_scale * (pred_noise - uncond_pred_noise)
-
             noise = torch.randn_like(x) if t > 0 else torch.zeros_like(x)
             return model_mean + noise * (0.5 * model_log_variance).exp(), x_recon, pred_noise
         else:

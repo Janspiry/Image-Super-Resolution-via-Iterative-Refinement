@@ -1,15 +1,15 @@
 {
-    "name": "sr3_ddim_cls-free-guid-10perc_naip",
+    "name": "sr3_ddim_cls-free-guid-20perc_naip",
     "phase": "train", // train or val
     "gpu_ids": [
         0,1
     ],
     "path": { //set the path
-        "log": "experiments/sr3_ddim_cls-free-guid-10perc_naip/logs",
-        "tb_logger": "experiments/sr3_ddim_cls-free-guid-10perc_naip/tb_logger",
-        "results": "experiments/sr3_ddim_cls-free-guid-10perc_naip/results",
-        "checkpoint": "experiments/sr3_ddim_cls-free-guid-10perc_naip/checkpoint",
-        "resume_state": "experiments/sr3_ddim_cls-free-guid-10perc_naip/checkpoint/I2000000_E104"
+        "log": "experiments/sr3_ddim_cls-free-guid-20perc_naip/logs",
+        "tb_logger": "experiments/sr3_ddim_cls-free-guid-20perc_naip/tb_logger",
+        "results": "experiments/sr3_ddim_cls-free-guid-20perc_naip/results",
+        "checkpoint": "experiments/sr3_ddim_cls-free-guid-20perc_naip/checkpoint",
+        "resume_state": "experiments/sr3_baseline/checkpoint/last"
     },
     "datasets": {
 	"output_size": 128,
