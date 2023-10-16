@@ -68,7 +68,9 @@
         "diffusion": {
 	    "image_size": 128,
             "channels": 3, //sample channel
-            "conditional": true // unconditional generation or unconditional generation(super_resolution)
+            "conditional": true, // unconditional generation or unconditional generation(super_resolution)
+	    "is_ddim_sampling": true,
+	    "unconditional_guidance_scale": 3.0
         }
     },
     "train": {

@@ -76,7 +76,9 @@ class GaussianDiffusion(nn.Module):
         conditional=True,
         schedule_opt=None,
         output_size=512,
-        use_3d=False
+        use_3d=False,
+        is_ddim_sampling=False,
+        unconditional_guidance_scale=1.0
     ):
         super().__init__()
         self.channels = channels
@@ -95,8 +97,8 @@ class GaussianDiffusion(nn.Module):
         schedule_fn_kwargs = dict()
         auto_normalize = True
 
-        self.unconditional_guidance_scale = 3.0
-        self.is_ddim_sampling = True
+        self.unconditional_guidance_scale = unconditional_guidance_scale
+        self.is_ddim_sampling = is_ddim_sampling
         print("Utilizing ddim sampling?:", self.is_ddim_sampling)
 
         if schedule_opt is not None:

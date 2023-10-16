@@ -9,6 +9,8 @@ from core.wandb_logger import WandbLogger
 from tensorboardX import SummaryWriter
 import os
 
+from metrics import *
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', type=str, default='config/sr_sr3_64_512.json',
@@ -69,6 +71,8 @@ if __name__ == "__main__":
     current_epoch = 0
     idx = 0
 
+    avg_psnr, avg_ssim = 0.0, 0.0
+
     result_path = '{}'.format(opt['path']['results'])
     os.makedirs(result_path, exist_ok=True)
     for _,  val_data in enumerate(val_loader):
@@ -80,16 +84,21 @@ if __name__ == "__main__":
         hr_img = Metrics.tensor2img(visuals['HR'])  # uint8
         fake_img = Metrics.tensor2img(visuals['INF'])  # uint8
 
-        sr_img_mode = 'grid'
+        sr_img_mode = 'single'
         if sr_img_mode == 'single':
             # single img series
             sr_img = visuals['SR']  # uint8
-            sample_num = sr_img.shape[0]
-            for iter in range(0, sample_num):
-                Metrics.save_img(
-                    Metrics.tensor2img(sr_img[iter]), '{}/{}_{}_sr_{}.png'.format(result_path, current_step, idx, iter))
+            print("sr img:", sr_img.shape)
+            sr_img = Metrics.tensor2img(sr_img[-1, :, :, :])
+            Metrics.save_img(sr_img, '{}/{}_{}_sr.png'.format(result_path, current_step, idx))
+
+            # If you want to save each individual in the sampling process...
+            #sample_num = sr_img.shape[0]
+            #for iter in range(0, sample_num):
+            #    Metrics.save_img(
+            #        Metrics.tensor2img(sr_img[iter]), '{}/{}_{}_sr_{}.png'.format(result_path, current_step, idx, iter))
         else:
-            # grid img
+            # If you want to save each individual in the sampling process, as a grid...
             #sr_img = Metrics.tensor2img(visuals['SR'])  # uint8
             #Metrics.save_img(
             #    sr_img, '{}/{}_{}_sr_process.png'.format(result_path, current_step, idx))
@@ -100,10 +109,27 @@ if __name__ == "__main__":
         #Metrics.save_img(
         #    hr_img, '{}/{}_{}_hr.png'.format(result_path, current_step, idx))
         #Metrics.save_img(
-        #    fake_img, '{}/{}_{}_inf.png'.format(result_path, current_step, idx))
+        #        fake_img[:,:,:3], '{}/{}_{}_inf.png'.format(result_path, current_step, idx))
+
+        print("sr img:", sr_img.shape)
+        print("fake:", fake_img.shape)
+        print("Hr:", hr_img.shape)
+
+        eval_psnr = calculate_psnr(hr_img, sr_img, 0)
+        eval_ssim = calculate_ssim(hr_img, sr_img, 0)
+        print(eval_psnr, eval_ssim)
+
+        avg_psnr += eval_psnr
+        avg_ssim += eval_ssim
 
         if wandb_logger and opt['log_infer']:
             wandb_logger.log_eval_data(fake_img, Metrics.tensor2img(visuals['SR'][-1]), hr_img)
+
+    avg_psnr = sum(avg_psnr) / len(avg_psnr)
+    avg_ssim = sum(avg_ssim) / len(avg_ssim)
+
+    print("Avg PSNR:", avg_psnr)
+    print("Avg SSIM:", avg_ssim)
 
     if wandb_logger and opt['log_infer']:
         wandb_logger.log_eval_table(commit=True)

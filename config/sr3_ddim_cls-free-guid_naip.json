@@ -9,7 +9,7 @@
         "tb_logger": "experiments/sr3_ddim_cls-free-guid_naip/tb_logger",
         "results": "experiments/sr3_ddim_cls-free-guid_naip/results",
         "checkpoint": "experiments/sr3_ddim_cls-free-guid_naip/checkpoint",
-        "resume_state": "experiments/sr3_baseline/checkpoint/last"
+        "resume_state": "experiments/sr3_ddim_cls-free-guid_naip/checkpoint/last"
     },
     "datasets": {
 	"output_size": 128,
@@ -68,13 +68,15 @@
         "diffusion": {
 	    "image_size": 128,
             "channels": 3, //sample channel
-            "conditional": true // unconditional generation or unconditional generation(super_resolution)
-        }
+            "conditional": true, // unconditional generation or unconditional generation(super_resolution)
+            "is_ddim_sampling": true,
+            "unconditional_guidance_scale": 3.0
+	}
     },
     "train": {
         "n_iter": 10000000,
-        "val_freq": 10e4,
-        "save_checkpoint_freq": 1e4,
+        "val_freq": 10e6,
+        "save_checkpoint_freq": 2e4,
         "print_freq": 200,
         "optimizer": {
             "type": "adam",

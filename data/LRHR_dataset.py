@@ -223,7 +223,7 @@ class LRHRDataset(Dataset):
         # Classifier-free guidance, X% of the time we want to replace S2 images with black images 
         # for "unconditional" generation during training. 
         cfg = random.randint(0, 19)
-        uncond = True if cfg in [0,1] else False
+        uncond = True if self.split == 'train' and cfg in [0,1,2,3] else False
 
         # Conditioning on S2, or S2 and downsampled NAIP.
         if self.datatype == 's2' or self.datatype == 's2_and_downsampled_naip' or self.datatype == 'just-s2':
