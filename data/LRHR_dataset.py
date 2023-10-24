@@ -125,6 +125,11 @@ class LRHRDataset(Dataset):
                 self.val_fps.append(os.path.join(self.naip_path, fp))
 
         self.naip_chips = glob.glob(self.naip_path + '/**/*.png', recursive=True)
+
+        # NOTE: temporary code to train on just 1/100th of the available data
+        #if self.split == 'train':
+        #    self.naip_chips = random.sample(self.naip_chips, 11000)
+
         print("self.naip chips:", len(self.naip_chips), " self.naip_path:", self.naip_path)
 
         # Conditioning on S2.

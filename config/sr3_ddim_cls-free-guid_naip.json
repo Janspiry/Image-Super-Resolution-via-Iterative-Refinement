@@ -25,7 +25,7 @@
         },
         "val": {
             "name": "S2-NAIP",
-            "dataroot": "/data/piperw/data/held_out_set/",
+            "dataroot": "/data/piperw/data/small_held_out_set/",
             "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
 	    "use_shuffle": false,
             "n_s2_images": 8  // if using S2 for condition, how many images per naip datapoint
@@ -70,7 +70,7 @@
             "channels": 3, //sample channel
             "conditional": true, // unconditional generation or unconditional generation(super_resolution)
             "is_ddim_sampling": true,
-            "unconditional_guidance_scale": 3.0
+            "unconditional_guidance_scale": 2.0
 	}
     },
     "train": {
