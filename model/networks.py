@@ -149,7 +149,9 @@ def define_G(opt):
         conditional=model_opt['diffusion']['conditional'],
         schedule_opt=model_opt['beta_schedule']['train'],
         output_size=output_size,
-        use_3d=bool(opt['datasets']['use_3d'])
+        use_3d=bool(opt['datasets']['use_3d']),
+        is_ddim_sampling=bool(model_opt['diffusion']['is_ddim_sampling']),
+        unconditional_guidance_scale=model_opt['diffusion']['unconditional_guidance_scale']
     )
 
     if opt['phase'] == 'train':
