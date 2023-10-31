@@ -69,6 +69,8 @@ if __name__ == "__main__":
     current_epoch = 0
     idx = 0
 
+    save_dir = '/data/piperw/data/mturk/worldstrat/' # temporary save dir for cvpr
+
     result_path = '{}'.format(opt['path']['results'])
     os.makedirs(result_path, exist_ok=True)
     for _,  val_data in enumerate(val_loader):
@@ -79,6 +81,11 @@ if __name__ == "__main__":
 
         hr_img = Metrics.tensor2img(visuals['HR'])  # uint8
         fake_img = Metrics.tensor2img(visuals['INF'])  # uint8
+
+        print("sr shape:", visuals['SR'][:, -1, :, :, :].shape)
+        print("savepath:", save_dir + str(idx) + '/sr3.png')
+        skimage.io.imsave('testing_0.png', hr_img)
+        exit()
 
         sr_img_mode = 'grid'
         if sr_img_mode == 'single':
