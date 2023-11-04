@@ -1,0 +1,88 @@
+{
+    "name": "sr3_ddpm",
+    "phase": "train", // train or val
+    "gpu_ids": [
+        0,1,2,3
+    ],
+    "path": { //set the path
+        "log": "experiments/cvpr/sr3_ddpm/logs",
+        "tb_logger": "experiments/cvpr/sr3_ddpm_baseline/tb_logger",
+        "results": "experiments/cvpr/sr3_ddpm/results",
+        "checkpoint": "experiments/cvpr/sr3_ddpm/checkpoint",
+        "resume_state": null //"experiments/sr3_ddpm_baseline/checkpoint/last"
+    },
+    "datasets": {
+	"output_size": 128,
+        "train": {
+            "name": "S2-NAIP",
+	    "dataroot": "/data/piperw/data/urban_set/",
+            "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
+            "batch_size": 64,
+            "num_workers": 32,
+            "use_shuffle": false,
+	    "tile_weights": "/data/piperw/data/tile_weights/urban_set_weights.json",
+            "n_s2_images": 8  // if using S2 for condition, how many images per naip datapoint
+        },
+        "val": {
+            "name": "S2-NAIP",
+            "dataroot": "/data/piperw/data/val_set/",
+            "datatype": "s2", //img for naip reconstruction & LSUN, s2 for conditioning on just s2, s2_and_downsampled_naip for both
+	    "use_shuffle": false,
+            "n_s2_images": 8  // if using S2 for condition, how many images per naip datapoint
+        }
+    },
+    "model": {
+        "which_model_G": "sr3", // use the ddpm or sr3 network structure
+        "finetune_norm": false,
+        "unet": {
+            "in_channel": 27,
+            "out_channel": 3,
+            "inner_channel": 64,
+            "channel_multiplier": [
+                1,
+                2,
+                4,
+                8,
+                8
+            ],
+            "attn_res": [
+                16
+            ],
+            "res_blocks": 2,
+            "dropout": 0.2
+        },
+        "beta_schedule": { // use munual beta_schedule for acceleration
+            "train": {
+                "schedule": "linear",
+                "n_timestep": 2000,
+                "linear_start": 1e-6,
+                "linear_end": 1e-2
+            },
+            "val": {
+                "schedule": "linear",
+                "n_timestep": 2000,
+                "linear_start": 1e-6,
+                "linear_end": 1e-2
+            }
+        },
+        "diffusion": {
+	    "image_size": 128,
+            "channels": 3, //sample channel
+            "conditional": true, // unconditional generation or unconditional generation(super_resolution)
+            "is_ddim_sampling": false
+	}
+    },
+    "train": {
+        "n_iter": 10000000,
+        "val_freq": 2e4,
+        "save_checkpoint_freq": 2e4,
+        "print_freq": 2000,
+        "optimizer": {
+            "type": "adam",
+            "lr": 1e-4
+        }
+    },
+    "wandb": {
+        "project": "multisat"
+    }
+}

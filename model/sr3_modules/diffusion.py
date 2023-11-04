@@ -100,6 +100,7 @@ class GaussianDiffusion(nn.Module):
         self.unconditional_guidance_scale = unconditional_guidance_scale
         self.is_ddim_sampling = is_ddim_sampling
         print("Utilizing ddim sampling?:", self.is_ddim_sampling)
+        print("Unconditional guidance scale?", self.unconditional_guidance_scale)
 
         if schedule_opt is not None:
             pass

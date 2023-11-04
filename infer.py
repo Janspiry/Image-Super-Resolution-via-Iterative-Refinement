@@ -1,4 +1,5 @@
 import torch
+import skimage.io
 import data as Data
 import model as Model
 import argparse
@@ -82,13 +83,16 @@ if __name__ == "__main__":
         diffusion.test(continous=True)
         visuals = diffusion.get_current_visuals(need_LR=False)
 
-        hr_img = Metrics.tensor2img(visuals['HR'])  # uint8
-        fake_img = Metrics.tensor2img(visuals['INF'])  # uint8
+        #hr_img = Metrics.tensor2img(visuals['HR'])  # uint8
+        #fake_img = Metrics.tensor2img(visuals['INF'])  # uint8
 
-        print("sr shape:", visuals['SR'][:, -1, :, :, :].shape)
-        print("savepath:", save_dir + str(idx) + '/sr3.png')
-        skimage.io.imsave('testing_0.png', hr_img)
-        exit()
+        # bias adjustment using ground truth
+        output = visuals['SR'][:, -1, :, :, :]
+
+        save_path = save_dir + str(idx-1) + '/sr3.png'
+        output = Metrics.tensor2img(output)
+        skimage.io.imsave(save_path, output)
+        continue
 
         """
         sr_img_mode = 'grid'
